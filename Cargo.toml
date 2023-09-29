@@ -10,3 +10,6 @@ cxx = "*"
 
 [build-dependencies]
 cxx-build = "*"
+
+[[example]]
+name="hello-world"
