@@ -19,3 +19,5 @@
 //!
 //! [1]: https://kokkos.github.io/kokkos-core-wiki/index.html
 //! [2]: https://docs.rs/rayon/latest/rayon/
+
+pub mod view;
