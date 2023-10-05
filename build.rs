@@ -13,8 +13,8 @@ fn main() {
         .compile("poc-cc");
 
     println!("cargo:rustc-link-arg=-L/opt/homebrew/Cellar/llvm/17.0.2/lib");
-    println!("cargo:rustc-link-arg=-lomp");
-    println!("cargo:rustc-link-arg=-ld_classic"); // xcode 15.0 broke the linker :))))))))
+    //println!("cargo:rustc-link-arg=-lomp");
+    //println!("cargo:rustc-link-arg=-ld_classic"); // xcode 15.0 broke the linker :))))))))
     println!("cargo:rerun-if-changed=src/main.rs");
     println!("cargo:rerun-if-changed=src/hello.cpp");
     println!("cargo:rerun-if-changed=include/hello.hpp");
