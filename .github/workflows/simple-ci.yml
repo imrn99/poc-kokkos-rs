@@ -33,7 +33,6 @@ jobs:
           toolchain: stable
           override: true
       - uses: Swatinem/rust-cache@v2
-      - run: sudo apt-get update && sudo apt-get upgrade -y
       - run: sudo apt-get install -y libgomp1 # extra dependency
       - uses: actions-rs/cargo@v1
         with:
