@@ -8,7 +8,7 @@ fn main() {
         .compiler(compiler)
         .file("src/hello.cpp")
         .flag_if_supported("-std=c++20")
-        .flag_if_supported("-fopenmp") // gcc
+        .flag_if_supported("-fopenmp") // gcc not working ? missing this flag when compiling with g++
         .flag_if_supported("-fopenmp=libomp") // clang
         .compile("poc-cc");
 
