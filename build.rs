@@ -12,7 +12,7 @@ fn main() {
         // clang++ flavor
         "-fopenmp=libomp"
     } else {
-        panic!()
+        unimplemented!()
     };
 
     cxx_build::bridge("src/lib.rs")
@@ -24,9 +24,15 @@ fn main() {
 
     // --- linking shenanigans ---
     println!("cargo:rustc-link-arg=-lomp");
-    if env::consts::OS == "macos" {
-        println!("cargo:rustc-link-arg=-L/opt/homebrew/opt/libomp/lib");
-        println!("cargo:rustc-link-arg=-ld_classic");
+    match env::consts::OS {
+        "macos" => {
+            println!("cargo:rustc-link-arg=-L/opt/homebrew/opt/libomp/lib");
+            println!("cargo:rustc-link-arg=-ld_classic");
+        }
+        "linux" => {
+            println!("cargo:rustc-link-arg=-L/opt/lib")
+        }
+        _ => unimplemented!(),
     }
     println!("cargo:rerun-if-changed=src/main.rs");
     println!("cargo:rerun-if-changed=src/hello.cpp");
