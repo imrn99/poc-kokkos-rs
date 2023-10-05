@@ -23,14 +23,16 @@ fn main() {
         .compile("poc-cc");
 
     // --- linking shenanigans ---
-    println!("cargo:rustc-link-arg=-lomp");
     match env::consts::OS {
         "macos" => {
             println!("cargo:rustc-link-arg=-L/opt/homebrew/opt/libomp/lib");
             println!("cargo:rustc-link-arg=-ld_classic");
+            println!("cargo:rustc-link-arg=-lomp");
         }
         "linux" => {
-            println!("cargo:rustc-link-arg=-L/opt/lib")
+            println!("cargo:rustc-link-arg=-I/usr/include");
+            println!("cargo:rustc-link-arg=-L/usr/lib");
+            println!("cargo:rustc-link-arg=-lgomp");
         }
         _ => unimplemented!(),
     }

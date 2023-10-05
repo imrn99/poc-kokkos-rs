@@ -4,7 +4,7 @@ on: [pull_request, workflow_dispatch]
 
 env:
   CARGO_TERM_COLOR: always
-  CXX: "clang++"
+  CXX: "g++"
 
 jobs:
   check:
@@ -33,7 +33,8 @@ jobs:
           toolchain: stable
           override: true
       - uses: Swatinem/rust-cache@v2
-      - run: sudo apt-get install -y libomp-dev # extra dependency
+      - run: sudo apt-get update && sudo apt-get upgrade -y
+      - run: sudo apt-get install -y libgomp1 # extra dependency
       - uses: actions-rs/cargo@v1
         with:
           command: test
