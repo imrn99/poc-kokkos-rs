@@ -1,12 +1,4 @@
-#[cxx::bridge(namespace = "")]
-mod ffi {
-    // C++ types and signatures exposed to Rust.
-    unsafe extern "C++" {
-        include!("openmp-parallel/many_hello.hpp");
-
-        fn say_many_hello();
-    }
-}
+use poc_kokkos_rs::ffi;
 
 fn main() {
     println!("Hello from Rust!");
