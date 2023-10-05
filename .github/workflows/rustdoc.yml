@@ -11,6 +11,7 @@ env:
   RUSTFLAGS: "-D warnings"
   RUSTUP_MAX_RETRIES: 10
   RUST_BACKTRACE: 1
+  CXX: "g++"
 
 jobs:
   rustdoc:
