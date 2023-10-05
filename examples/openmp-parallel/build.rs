@@ -14,7 +14,7 @@ fn main() {
         .compile("poc-cc");
 
     // linker omp flags
-    println!("cargo:rustc-link-arg=-L/opt/homebrew/Cellar/llvm/17.0.1/lib");
+    println!("cargo:rustc-link-arg=-L/opt/homebrew/Cellar/llvm/17.0.2/lib");
     println!("cargo:rustc-link-arg=-lomp");
 
     println!("cargo:rerun-if-changed=main.rs");
