@@ -8,12 +8,13 @@ fn main() {
         .compiler(compiler)
         .file("src/hello.cpp")
         .flag_if_supported("-std=c++20")
-        .flag_if_supported("-fopenmp") // gcc not working ? missing this flag when compiling with g++
+        .flag("-fopenmp") // gcc not working ? missing this flag when compiling with g++
         .flag_if_supported("-fopenmp=libomp") // clang
         .compile("poc-cc");
 
     println!("cargo:rustc-link-arg=-L/opt/homebrew/Cellar/llvm/17.0.2/lib");
     println!("cargo:rustc-link-arg=-lomp");
+    println!("cargo:rustc-link-arg=-ld_classic"); // xcode 15.0 broke the linker :))))))))
     println!("cargo:rerun-if-changed=src/main.rs");
     println!("cargo:rerun-if-changed=src/hello.cpp");
     println!("cargo:rerun-if-changed=include/hello.hpp");
