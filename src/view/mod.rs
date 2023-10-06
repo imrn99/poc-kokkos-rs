@@ -60,9 +60,27 @@ where
     S: Stride,
     D: Dim,
 {
-    /// Constructor.
+    /// Constructor used to create owned (and shared?) views. See dedicated methods for
+    /// others.
     pub fn new(data: T, layout: Layout<S>, dim: D) -> Self {
-        todo!()
+        let depth = dim.depth();
+        // compute stride if necessary
+        let stride = match layout {
+            Layout::Right => todo!(),
+            Layout::Left => todo!(),
+            Layout::Stride { s } => s,
+        };
+
+        // checks
+        assert_eq!(depth, stride.depth());
+
+        // build & return
+        Self {
+            data,
+            layout,
+            dim,
+            stride,
+        }
     }
 }
 
