@@ -3,6 +3,8 @@
 //!
 //!
 
+use std::sync::Arc;
+
 use crate::traits::{
     data::SomeData,
     dimension::{Dim, Stride},
@@ -34,3 +36,11 @@ where
     pub layout: Layout<S>,
     pub dim: D,
 }
+
+pub type ViewOwned<A, S, D> = ViewBase<Vec<A>, S, D>;
+
+pub type ViewRO<'a, A, S, D> = ViewBase<&'a A, S, D>;
+
+pub type ViewRW<'a, A, S, D> = ViewBase<&'a mut A, S, D>;
+
+pub type ViewShared<A, S, D> = ViewBase<Arc<Vec<A>>, S, D>;
