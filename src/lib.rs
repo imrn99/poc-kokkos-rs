@@ -32,5 +32,4 @@ pub mod ffi {
     }
 }
 
-pub mod traits;
 pub mod view;

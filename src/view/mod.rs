@@ -3,15 +3,16 @@
 //!
 //!
 
-use crate::traits::data::SomeData;
+use self::traits::SomeData;
 use smallvec::SmallVec;
 use std::sync::Arc;
+
+pub mod traits;
 
 /// Maximum possible depth (i.e. number of dimensions) for a view.
 pub const MAX_VIEW_DEPTH: usize = 8;
 
-/// Dim
-
+/// Dimension
 pub type Dimension = SmallVec<[usize; MAX_VIEW_DEPTH]>;
 
 /// Stride
