@@ -3,34 +3,16 @@
 //!
 //!
 
-use self::traits::SomeData;
-use smallvec::SmallVec;
+use crate::view::parameters::compute_stride;
+
+use self::{
+    parameters::{Dimension, Layout, Stride},
+    traits::SomeData,
+};
 use std::sync::Arc;
 
+pub mod parameters;
 pub mod traits;
-
-/// Maximum possible depth (i.e. number of dimensions) for a view.
-pub const MAX_VIEW_DEPTH: usize = 8;
-
-/// Dimension
-pub type Dimension = SmallVec<[usize; MAX_VIEW_DEPTH]>;
-
-/// Stride
-pub type Stride = SmallVec<[usize; MAX_VIEW_DEPTH]>;
-
-#[derive(Clone)]
-/// Enum used to represent data layout. Struct enums is used in order to increase
-/// readability.
-pub enum Layout {
-    /// Highest stride for the first index, decreasing stride as index increases.
-    /// Exact stride for each index can be computed from dimensions at view initialization.
-    Right,
-    /// Lowest stride for the first index, increasing stride as index decreases.
-    /// Exact stride for each index can be computed from dimensions at view initialization.
-    Left,
-    /// Custom stride for each index. Must be compatible with dimensions.
-    Stride { s: Stride },
-}
 
 /// Common structure used as the backend of all `View` types. The main differences between
 /// usable types is the type of the `data` field.
@@ -64,11 +46,7 @@ where
     pub fn new(data: T, layout: Layout, dim: Dimension) -> Self {
         let depth = dim.len();
         // compute stride if necessary
-        let stride = match layout.clone() {
-            Layout::Right => todo!(),
-            Layout::Left => todo!(),
-            Layout::Stride { s } => s,
-        };
+        let stride = compute_stride(&dim, &layout);
 
         // checks
         assert_eq!(depth, stride.len());
