@@ -6,6 +6,12 @@
 /// Maximum possible depth (i.e. number of dimensions) for a view.
 pub const MAX_VIEW_DEPTH: usize = 8;
 
+pub enum DataType<'a, T> {
+    Owned(Vec<T>),
+    Borrowed(&'a [T]),
+    MutBorrowed(&'a mut [T]),
+}
+
 #[derive(Clone)]
 /// Enum used to represent data layout. Struct enums is used in order to increase
 /// readability.

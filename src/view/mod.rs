@@ -5,22 +5,17 @@
 
 use crate::view::parameters::compute_stride;
 
-use self::{parameters::Layout, traits::SomeData};
-use std::sync::Arc;
+use self::parameters::{DataType, Layout};
 
 pub mod parameters;
-pub mod traits;
 
 /// Common structure used as the backend of all `View` types. The main differences between
 /// usable types is the type of the `data` field.
-pub struct ViewBase<const N: usize, D>
-where
-    D: SomeData,
-{
+pub struct ViewBase<'a, const N: usize, T> {
     /// Data container. Depending on the type, it can be a vector (`Owned`), a reference
     /// (`ReadOnly`), a mutable reference (`ReadWrite`) or an `Arc` pointing on a vector
     /// (`Shared`).
-    pub data: D,
+    pub data: DataType<'a, T>,
     /// Memory layout of the view. Refer to Kokkos documentation for more information.
     pub layout: Layout<N>,
     /// Dimensions of the data represented by the view. The view can:
@@ -34,13 +29,10 @@ where
     pub stride: [usize; N],
 }
 
-impl<const N: usize, D> ViewBase<N, D>
-where
-    D: SomeData,
-{
+impl<'a, const N: usize, T> ViewBase<'a, N, T> {
     /// Constructor used to create owned (and shared?) views. See dedicated methods for
     /// others.
-    pub fn new(data: D, layout: Layout<N>, dim: [usize; N]) -> Self {
+    pub fn new(data: Vec<T>, layout: Layout<N>, dim: [usize; N]) -> Self {
         let depth = dim.len();
         // compute stride if necessary
         let stride = compute_stride(&dim, &layout);
@@ -50,7 +42,7 @@ where
 
         // build & return
         Self {
-            data,
+            data: DataType::Owned(data),
             layout,
             dim,
             stride,
@@ -59,16 +51,16 @@ where
 }
 
 /// View type owning the data it yields access to, i.e. "original" view.
-pub type ViewOwned<const N: usize, T> = ViewBase<N, Vec<T>>;
+pub type ViewOwned<'a, const N: usize, T> = ViewBase<'a, N, T>;
 
 /// View type owning a read-only borrow to the data it yields access to, i.e. a
 /// read-only mirror.
-pub type ViewRO<'a, const N: usize, T> = ViewBase<N, &'a [T]>;
+pub type ViewRO<'a, const N: usize, T> = ViewBase<'a, N, T>;
 
 /// View type owning a mutable borrow to the data it yields access to, i.e. a
 /// read-write mirror.
-pub type ViewRW<'a, const N: usize, T> = ViewBase<N, &'a mut [T]>;
+pub type ViewRW<'a, const N: usize, T> = ViewBase<'a, N, T>;
 
 /// View type owning a shared reference to the data it yields access to, i.e. a
 /// thread-safe read-only mirror.
-pub type ViewShared<const N: usize, T> = ViewBase<N, Arc<Vec<T>>>;
+pub type ViewShared<'a, const N: usize, T> = ViewBase<'a, N, T>;
