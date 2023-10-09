@@ -80,4 +80,22 @@ mod tests {
 
         assert_eq!(cmp_stride, ref_stride);
     }
+
+    #[test]
+    fn stride_left() {
+        let mut dim: Dimension = smallvec!();
+        dim.push(3); // n0
+        dim.push(4); // n1
+        dim.push(5); // n2
+        dim.push(6); // n3
+
+        let cmp_stride = compute_stride(&dim, &Layout::Left);
+        let mut ref_stride: Stride = smallvec!();
+        ref_stride.push(1); // 1
+        ref_stride.push(3); // n0
+        ref_stride.push(3 * 4); // n0 * n1
+        ref_stride.push(3 * 4 * 5); // n0 * n1 * n2
+
+        assert_eq!(cmp_stride, ref_stride);
+    }
 }
