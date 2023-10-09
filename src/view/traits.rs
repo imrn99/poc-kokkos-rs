@@ -5,18 +5,18 @@ pub trait SomeData: Default {
     type DataType;
 }
 
-impl<A> SomeData for Vec<A> {
-    type DataType = A;
+impl<T> SomeData for Vec<T> {
+    type DataType = T;
 }
 
-impl<'a, A> SomeData for &'a [A] {
-    type DataType = A;
+impl<'a, T> SomeData for &'a [T] {
+    type DataType = T;
 }
 
-impl<'a, A> SomeData for &'a mut [A] {
-    type DataType = A;
+impl<'a, T> SomeData for &'a mut [T] {
+    type DataType = T;
 }
 
-impl<A> SomeData for Arc<Vec<A>> {
-    type DataType = A;
+impl<T> SomeData for Arc<Vec<T>> {
+    type DataType = T;
 }

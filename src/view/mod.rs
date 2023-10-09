@@ -13,14 +13,14 @@ pub mod traits;
 
 /// Common structure used as the backend of all `View` types. The main differences between
 /// usable types is the type of the `data` field.
-pub struct ViewBase<const N: usize, T>
+pub struct ViewBase<const N: usize, D>
 where
-    T: SomeData,
+    D: SomeData,
 {
     /// Data container. Depending on the type, it can be a vector (`Owned`), a reference
     /// (`ReadOnly`), a mutable reference (`ReadWrite`) or an `Arc` pointing on a vector
     /// (`Shared`).
-    pub data: T,
+    pub data: D,
     /// Memory layout of the view. Refer to Kokkos documentation for more information.
     pub layout: Layout<N>,
     /// Dimensions of the data represented by the view. The view can:
@@ -34,13 +34,13 @@ where
     pub stride: [usize; N],
 }
 
-impl<const N: usize, T> ViewBase<N, T>
+impl<const N: usize, D> ViewBase<N, D>
 where
-    T: SomeData,
+    D: SomeData,
 {
     /// Constructor used to create owned (and shared?) views. See dedicated methods for
     /// others.
-    pub fn new(data: T, layout: Layout<N>, dim: [usize; N]) -> Self {
+    pub fn new(data: D, layout: Layout<N>, dim: [usize; N]) -> Self {
         let depth = dim.len();
         // compute stride if necessary
         let stride = compute_stride(&dim, &layout);
@@ -59,16 +59,16 @@ where
 }
 
 /// View type owning the data it yields access to, i.e. "original" view.
-pub type ViewOwned<const N: usize, A> = ViewBase<N, Vec<A>>;
+pub type ViewOwned<const N: usize, T> = ViewBase<N, Vec<T>>;
 
 /// View type owning a read-only borrow to the data it yields access to, i.e. a
 /// read-only mirror.
-pub type ViewRO<'a, const N: usize, A> = ViewBase<N, &'a [A]>;
+pub type ViewRO<'a, const N: usize, T> = ViewBase<N, &'a [T]>;
 
 /// View type owning a mutable borrow to the data it yields access to, i.e. a
 /// read-write mirror.
-pub type ViewRW<'a, const N: usize, A> = ViewBase<N, &'a mut [A]>;
+pub type ViewRW<'a, const N: usize, T> = ViewBase<N, &'a mut [T]>;
 
 /// View type owning a shared reference to the data it yields access to, i.e. a
 /// thread-safe read-only mirror.
-pub type ViewShared<const N: usize, A> = ViewBase<N, Arc<Vec<A>>>;
+pub type ViewShared<const N: usize, T> = ViewBase<N, Arc<Vec<T>>>;
