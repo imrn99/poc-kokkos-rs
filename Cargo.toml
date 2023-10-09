@@ -7,7 +7,6 @@ edition = "2021"
 
 [dependencies]
 cxx = "*"
-smallvec = "*"
 
 [build-dependencies]
 cxx-build = "*"

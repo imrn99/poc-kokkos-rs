@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 /// Generic trait used to define data held by views.
-pub trait SomeData {
+pub trait SomeData: Default {
     type DataType;
 }
 
