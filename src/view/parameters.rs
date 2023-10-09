@@ -14,7 +14,7 @@ pub enum DataType<'a, T> {
 
 /// Enum used to represent data layout. Struct enums is used in order to increase
 /// readability.
-#[derive(Clone, Default)]
+#[derive(Clone, Copy, Default)]
 pub enum Layout<const N: usize> {
     /// Highest stride for the first index, decreasing stride as index increases.
     /// Exact stride for each index can be computed from dimensions at view initialization.
@@ -29,7 +29,7 @@ pub enum Layout<const N: usize> {
 
 /// Compute correct strides of each index using dimensions and specified layout.
 pub fn compute_stride<const N: usize>(dim: &[usize; N], layout: &Layout<N>) -> [usize; N] {
-    match layout.clone() {
+    match layout {
         Layout::Right => {
             let mut stride = [1; N];
 
@@ -53,7 +53,7 @@ pub fn compute_stride<const N: usize>(dim: &[usize; N], layout: &Layout<N>) -> [
 
             stride
         }
-        Layout::Stride { s } => s,
+        Layout::Stride { s } => *s,
     }
 }
 

@@ -67,6 +67,40 @@ where
             stride,
         }
     }
+
+    pub fn create_mirror<'b>(&'a self) -> ViewRO<'b, N, T>
+    where
+        'a: 'b,
+    {
+        let DataType::Owned(inner) = &self.data else {
+            todo!()
+        };
+        let data = DataType::Borrowed(inner);
+
+        Self {
+            data,
+            layout: self.layout,
+            dim: self.dim,
+            stride: self.stride,
+        }
+    }
+
+    pub fn create_mutable_mirror<'b>(&'a mut self) -> ViewRO<'b, N, T>
+    where
+        'a: 'b,
+    {
+        let DataType::Owned(inner) = &mut self.data else {
+            todo!()
+        };
+        let data = DataType::MutBorrowed(inner);
+
+        Self {
+            data,
+            layout: self.layout,
+            dim: self.dim,
+            stride: self.stride,
+        }
+    }
 }
 
 /// View type owning the data it yields access to, i.e. "original" view.
