@@ -12,12 +12,13 @@ pub enum DataType<'a, T> {
     MutBorrowed(&'a mut [T]),
 }
 
-#[derive(Clone)]
 /// Enum used to represent data layout. Struct enums is used in order to increase
 /// readability.
+#[derive(Clone, Default)]
 pub enum Layout<const N: usize> {
     /// Highest stride for the first index, decreasing stride as index increases.
     /// Exact stride for each index can be computed from dimensions at view initialization.
+    #[default]
     Right,
     /// Lowest stride for the first index, increasing stride as index decreases.
     /// Exact stride for each index can be computed from dimensions at view initialization.

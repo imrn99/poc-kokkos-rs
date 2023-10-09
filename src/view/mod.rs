@@ -29,10 +29,29 @@ pub struct ViewBase<'a, const N: usize, T> {
     pub stride: [usize; N],
 }
 
-impl<'a, const N: usize, T> ViewBase<'a, N, T> {
+impl<'a, const N: usize, T> ViewBase<'a, N, T>
+where
+    T: Default + Clone,
+{
     /// Constructor used to create owned (and shared?) views. See dedicated methods for
     /// others.
-    pub fn new(data: Vec<T>, layout: Layout<N>, dim: [usize; N]) -> Self {
+    pub fn new(layout: Layout<N>, dim: [usize; N]) -> Self {
+        // compute stride & capacity
+        let stride = compute_stride(&dim, &layout);
+        let capacity: usize = dim.iter().product();
+
+        // build & return
+        Self {
+            data: DataType::Owned(vec![T::default(); capacity]),
+            layout,
+            dim,
+            stride,
+        }
+    }
+
+    /// Constructor used to create owned (and shared?) views. See dedicated methods for
+    /// others.
+    pub fn new_from_data(data: Vec<T>, layout: Layout<N>, dim: [usize; N]) -> Self {
         let depth = dim.len();
         // compute stride if necessary
         let stride = compute_stride(&dim, &layout);
