@@ -58,3 +58,26 @@ pub fn compute_stride(dim: &Dimension, layout: &Layout) -> Stride {
         Layout::Stride { s } => s,
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn stride_right() {
+        let mut dim: Dimension = smallvec!();
+        dim.push(3); // n0
+        dim.push(4); // n1
+        dim.push(5); // n2
+        dim.push(6); // n3
+
+        let cmp_stride = compute_stride(&dim, &Layout::Right);
+        let mut ref_stride: Stride = smallvec!();
+        ref_stride.push(6 * 5 * 4); // n3 * n2 * n1
+        ref_stride.push(6 * 5); // n3 * n2
+        ref_stride.push(6); // n3
+        ref_stride.push(1); // 1
+
+        assert_eq!(cmp_stride, ref_stride);
+    }
+}

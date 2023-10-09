@@ -5,12 +5,12 @@ fn main() {
     let compiler = env::var("CXX").unwrap_or("g++".to_string());
 
     // messy but works
-    let ompflags = if compiler.contains("g++") {
-        // g++ flavor
-        "-fopenmp"
-    } else if compiler.contains("clang++") {
+    let ompflags = if compiler.contains("clang++") {
         // clang++ flavor
         "-fopenmp=libomp"
+    } else if compiler.contains("g++") {
+        // g++ flavor
+        "-fopenmp"
     } else {
         unimplemented!()
     };
