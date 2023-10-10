@@ -78,8 +78,10 @@ where
     where
         'a: 'b,
     {
-        let DataType::Owned(inner) = &self.data else {
-            todo!()
+        let inner: &[T] = match &self.data {
+            DataType::Owned(v) => &v[..],
+            DataType::Borrowed(slice) => slice,
+            DataType::MutBorrowed(mut_slice) => mut_slice, // is this allowed ?
         };
         let data = DataType::Borrowed(inner);
 
@@ -95,10 +97,14 @@ where
     where
         'a: 'b,
     {
-        let DataType::Owned(inner) = &mut self.data else {
-            todo!()
+        let inner: &mut [T] = match &mut self.data {
+            DataType::Owned(v) => &mut v[..],
+            DataType::Borrowed(_) => {
+                unimplemented!("Cannot create a mutable mirror from a read-onmy view!")
+            }
+            DataType::MutBorrowed(mut_slice) => mut_slice, // is this allowed ?
         };
-        let data = DataType::MutBorrowed(inner);
+        let data = DataType::Borrowed(inner);
 
         Self {
             data,
