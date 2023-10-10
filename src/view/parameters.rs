@@ -1,14 +1,29 @@
+//! view parameterization code
 //!
+//! This module contains all code used to parameterize views. Some parameters are direct
+//! Kokkos replicates while others are Rust-specific. Currently supported parameters
+//! include:
 //!
+//! - Type of the data owned by the view (Rust-specific)
+//! - Memory layout
 //!
+//! Possible future implementations include:
+//!
+//! - Memory space
+//! -
 //!
 
 /// Maximum possible depth (i.e. number of dimensions) for a view.
 pub const MAX_VIEW_DEPTH: usize = 8;
 
+/// Enum used to identify the type of data the view is holding. See variants for more
+/// information.
 pub enum DataType<'a, T> {
+    /// The view owns the data.
     Owned(Vec<T>),
+    /// The view borrows the data and can only read it.
     Borrowed(&'a [T]),
+    /// The view borrows the data and can both read and modify it.
     MutBorrowed(&'a mut [T]),
 }
 
@@ -29,6 +44,7 @@ pub enum Layout<const N: usize> {
 
 /// Compute correct strides of each index using dimensions and specified layout.
 pub fn compute_stride<const N: usize>(dim: &[usize; N], layout: &Layout<N>) -> [usize; N] {
+    assert_eq!(N.clamp(1, MAX_VIEW_DEPTH), N); // 1 <= N <= MAX_N
     match layout {
         Layout::Right => {
             let mut stride = [1; N];

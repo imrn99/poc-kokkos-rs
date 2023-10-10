@@ -1,19 +1,22 @@
+//! data structure related code
 //!
+//! This module contains code used for the implementations of `Views`, a data structure
+//! defined and used by the Kokkos library. There are different types of views, all
+//! implemented using the same backend, [ViewBase].
 //!
+//! Parameters of aforementionned views are defined in the [`parameters`] sub-module.
 //!
-//!
-
-use crate::view::parameters::compute_stride;
-
-use self::parameters::{DataType, Layout};
 
 pub mod parameters;
+
+use self::parameters::{compute_stride, DataType, Layout};
+use std::sync::Arc;
 
 /// Common structure used as the backend of all `View` types. The main differences between
 /// usable types is the type of the `data` field.
 pub struct ViewBase<'a, const N: usize, T> {
     /// Data container. Depending on the type, it can be a vector (`Owned`), a reference
-    /// (`ReadOnly`), a mutable reference (`ReadWrite`) or an `Arc` pointing on a vector
+    /// (`ReadOnly`), a mutable reference (`ReadWrite`) or an `Arc<>` pointing on a vector
     /// (`Shared`).
     pub data: DataType<'a, T>,
     /// Memory layout of the view. Refer to Kokkos documentation for more information.
@@ -31,7 +34,7 @@ pub struct ViewBase<'a, const N: usize, T> {
 
 impl<'a, const N: usize, T> ViewBase<'a, N, T>
 where
-    T: Default + Clone,
+    T: Default + Clone, // fair assumption imo
 {
     /// Constructor used to create owned (and shared?) views. See dedicated methods for
     /// others.
@@ -42,7 +45,7 @@ where
 
         // build & return
         Self {
-            data: DataType::Owned(vec![T::default(); capacity]),
+            data: DataType::Owned(vec![T::default(); capacity]), // should this be allocated though?
             layout,
             dim,
             stride,
@@ -85,7 +88,7 @@ where
         }
     }
 
-    pub fn create_mutable_mirror<'b>(&'a mut self) -> ViewRO<'b, N, T>
+    pub fn create_mutable_mirror<'b>(&'a mut self) -> ViewRW<'b, N, T>
     where
         'a: 'b,
     {
@@ -115,5 +118,5 @@ pub type ViewRO<'a, const N: usize, T> = ViewBase<'a, N, T>;
 pub type ViewRW<'a, const N: usize, T> = ViewBase<'a, N, T>;
 
 /// View type owning a shared reference to the data it yields access to, i.e. a
-/// thread-safe read-only mirror.
-pub type ViewShared<'a, const N: usize, T> = ViewBase<'a, N, T>;
+/// thread-safe read-only mirror. Is this useful ? Shouldn't this be Arc<Mutex<T>> ?
+pub type ViewShared<'a, const N: usize, T> = ViewBase<'a, N, Arc<T>>;
