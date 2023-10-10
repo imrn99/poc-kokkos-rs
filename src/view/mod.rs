@@ -10,7 +10,10 @@
 pub mod parameters;
 
 use self::parameters::{compute_stride, DataType, Layout};
-use std::sync::Arc;
+use std::{
+    ops::{Index, IndexMut},
+    sync::Arc,
+};
 
 /// Common structure used as the backend of all `View` types. The main differences between
 /// usable types is the type of the `data` field.
@@ -102,6 +105,38 @@ where
             layout: self.layout,
             dim: self.dim,
             stride: self.stride,
+        }
+    }
+}
+
+impl<'a, const N: usize, T> Index<[usize; N]> for ViewBase<'a, N, T> {
+    type Output = T;
+
+    fn index(&self, index: [usize; N]) -> &Self::Output {
+        let flat_idx: usize = index
+            .iter()
+            .zip(self.stride.iter())
+            .map(|(i, s_i)| *i * *s_i)
+            .sum();
+        match &self.data {
+            DataType::Owned(v) => &v[flat_idx],
+            DataType::Borrowed(slice) => &slice[flat_idx],
+            DataType::MutBorrowed(mut_slice) => &mut_slice[flat_idx],
+        }
+    }
+}
+
+impl<'a, const N: usize, T> IndexMut<[usize; N]> for ViewBase<'a, N, T> {
+    fn index_mut(&mut self, index: [usize; N]) -> &mut Self::Output {
+        let flat_idx: usize = index
+            .iter()
+            .zip(self.stride.iter())
+            .map(|(i, s_i)| *i * *s_i)
+            .sum();
+        match &mut self.data {
+            DataType::Owned(v) => &mut v[flat_idx],
+            DataType::Borrowed(_) => unimplemented!("Cannot mutably access a read-only view!"),
+            DataType::MutBorrowed(mut_slice) => &mut mut_slice[flat_idx],
         }
     }
 }
