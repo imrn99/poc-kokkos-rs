@@ -58,12 +58,12 @@ where
     /// Constructor used to create owned (and shared?) views. See dedicated methods for
     /// others.
     pub fn new_from_data(data: Vec<T>, layout: Layout<N>, dim: [usize; N]) -> Self {
-        let depth = dim.len();
         // compute stride if necessary
         let stride = compute_stride(&dim, &layout);
 
         // checks
-        assert_eq!(depth, stride.len());
+        let capacity: usize = dim.iter().product();
+        assert_eq!(capacity, data.len());
 
         // build & return
         Self {
@@ -76,7 +76,7 @@ where
 
     pub fn create_mirror<'b>(&'a self) -> ViewRO<'b, N, T>
     where
-        'a: 'b,
+        'a: 'b, // 'a outlives 'b
     {
         let inner: &[T] = match &self.data {
             DataType::Owned(v) => &v[..],
@@ -95,7 +95,7 @@ where
 
     pub fn create_mutable_mirror<'b>(&'a mut self) -> ViewRW<'b, N, T>
     where
-        'a: 'b,
+        'a: 'b, // 'a outlives 'b
     {
         let inner: &mut [T] = match &mut self.data {
             DataType::Owned(v) => &mut v[..],
@@ -125,9 +125,18 @@ impl<'a, const N: usize, T> Index<[usize; N]> for ViewBase<'a, N, T> {
             .map(|(i, s_i)| *i * *s_i)
             .sum();
         match &self.data {
-            DataType::Owned(v) => &v[flat_idx],
-            DataType::Borrowed(slice) => &slice[flat_idx],
-            DataType::MutBorrowed(mut_slice) => &mut_slice[flat_idx],
+            DataType::Owned(v) => {
+                assert!(flat_idx < v.len()); // remove bounds check
+                &v[flat_idx]
+            }
+            DataType::Borrowed(slice) => {
+                assert!(flat_idx < slice.len()); // remove bounds check
+                &slice[flat_idx]
+            }
+            DataType::MutBorrowed(mut_slice) => {
+                assert!(flat_idx < mut_slice.len()); // remove bounds check
+                &mut_slice[flat_idx]
+            }
         }
     }
 }
@@ -140,9 +149,15 @@ impl<'a, const N: usize, T> IndexMut<[usize; N]> for ViewBase<'a, N, T> {
             .map(|(i, s_i)| *i * *s_i)
             .sum();
         match &mut self.data {
-            DataType::Owned(v) => &mut v[flat_idx],
+            DataType::Owned(v) => {
+                assert!(flat_idx < v.len()); // remove bounds check
+                &mut v[flat_idx]
+            }
             DataType::Borrowed(_) => unimplemented!("Cannot mutably access a read-only view!"),
-            DataType::MutBorrowed(mut_slice) => &mut mut_slice[flat_idx],
+            DataType::MutBorrowed(mut_slice) => {
+                assert!(flat_idx < mut_slice.len()); // remove bounds check
+                &mut mut_slice[flat_idx]
+            }
         }
     }
 }

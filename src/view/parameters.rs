@@ -10,7 +10,7 @@
 //! Possible future implementations include:
 //!
 //! - Memory space
-//! -
+//! - Memory traits?
 //!
 
 /// Maximum possible depth (i.e. number of dimensions) for a view.
