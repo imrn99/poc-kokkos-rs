@@ -100,7 +100,7 @@ where
         let inner: &mut [T] = match &mut self.data {
             DataType::Owned(v) => &mut v[..],
             DataType::Borrowed(_) => {
-                unimplemented!("Cannot create a mutable mirror from a read-onmy view!")
+                unimplemented!("Cannot create a mutable mirror from a read-only view!")
             }
             DataType::MutBorrowed(mut_slice) => mut_slice, // is this allowed ?
         };
