@@ -100,4 +100,15 @@ mod tests {
 
         assert_eq!(cmp_stride, ref_stride);
     }
+
+    #[test]
+    fn one_d_stride() {
+        // 1d view (vector) of length 1
+        let dim: [usize; 1] = [8];
+        let ref_stride: [usize; 1] = [1];
+        let mut cmp_stride = compute_stride(&dim, &Layout::Right);
+        assert_eq!(ref_stride, cmp_stride);
+        cmp_stride = compute_stride(&dim, &Layout::Left);
+        assert_eq!(ref_stride, cmp_stride);
+    }
 }
