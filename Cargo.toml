@@ -19,3 +19,7 @@ cxx-build = "*"
 [[bench]]
 name = "gemv"
 harness = false
+
+[[bench]]
+name = "view_init"
+harness = false

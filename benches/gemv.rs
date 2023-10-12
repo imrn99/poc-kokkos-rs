@@ -1,5 +1,10 @@
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
 
+// Currently a partial gemv
+// y = Ax / y = xA
+// instead of
+// y = s1*Au + s2*v
+
 // regular matrix-vector product
 fn f1(size: u32) {
     let length = 2_usize.pow(size);
