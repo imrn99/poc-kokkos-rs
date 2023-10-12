@@ -3,7 +3,7 @@ use poc_kokkos_rs::view::{parameters::Layout, ViewOwned};
 use rand::prelude::*;
 
 // this bench is used to evaluate the cost of accessing views' data
-// all benched functions contain 10^6 accesses.
+// all benched functions contain 10^3 accesses.
 
 // 1D vector access
 fn f1(length: usize, indices: &[usize]) {
