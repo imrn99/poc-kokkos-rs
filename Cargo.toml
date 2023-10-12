@@ -10,6 +10,7 @@ cxx = "*"
 
 [dev-dependencies]
 criterion = { version = "*", features = ["html_reports"] }
+rand = { version = "*", features = ["small_rng", "alloc"] }
 
 [build-dependencies]
 cxx-build = "*"
