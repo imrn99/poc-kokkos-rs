@@ -9,9 +9,16 @@
 
 use std::ops::Range;
 
+pub enum ExecutionSpace {
+    Serial,
+    Threads,
+    Rayon,
+    OpenMP,
+}
+
 /// Range Policy enum. This holds information related to the looping structure
 /// adopted by the routine.
-pub enum RangePolicy<const N: usize> {
+pub enum OuterRangePolicy<const N: usize> {
     /// 1D iteration range.
     RangePolicy(Range<usize>),
     /// N-dimensional iteration range.
@@ -29,7 +36,7 @@ pub enum RangePolicy<const N: usize> {
 
 /// Nested Policy enum. This is similar to [RangePolicy], but specific to nested parallel
 /// patterns. TODO: Need to add inner data to each TYPE
-pub enum NestedPolicy<const N: usize> {
+pub enum InnerRangePolicy<const N: usize> {
     /// Policy used to ensure each team execute the body once and only once.
     PerTeam,
     /// Policy used to ensure each thread execute the body once and only once.
@@ -49,4 +56,25 @@ pub enum NestedPolicy<const N: usize> {
     ThreadVectorRange,
     /// Inner-level depth. Cannot host further nests.
     ThreadVectorMDRange,
+}
+
+pub trait RangePolicy {}
+
+impl<const N: usize> RangePolicy for OuterRangePolicy<N> {}
+impl<const N: usize> RangePolicy for InnerRangePolicy<N> {}
+
+#[derive(Default)]
+pub enum Schedule {
+    #[default]
+    Static,
+    Dynamic,
+}
+
+pub struct ExecutionPolicy<R>
+where
+    R: RangePolicy,
+{
+    pub space: ExecutionSpace,
+    pub range: R,
+    pub schedule: Schedule,
 }
