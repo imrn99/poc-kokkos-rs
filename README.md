@@ -41,6 +41,23 @@ A consise documentation can be generated and accessed using the following comman
 cargo doc --open --no-deps
 ```
 
+## References
+
+### View Implementation
+
+- `ndarray` Rust implementation: [link][NDARRAY]
+- Const generics documentation from The Rust Reference: [link][CONSTG]
+
+
+### Functor Implementation
+
+- A very specific answer to a very specific rust-lang issue: [link][FNIMPL]
+
+
 
 [1]: https://kokkos.github.io/kokkos-core-wiki/index.html
 [2]: https://docs.rs/rayon/latest/rayon/
+
+[NDARRAY]: https://docs.rs/ndarray/latest/ndarray/
+[CONSTG]: https://doc.rust-lang.org/reference/items/generics.html
+[FNIMPL]: https://github.com/rust-lang/rust/issues/29625#issuecomment-1692602873
