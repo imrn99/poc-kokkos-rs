@@ -74,4 +74,5 @@ pub mod ffi {
     }
 }
 
+pub mod functor;
 pub mod view;
