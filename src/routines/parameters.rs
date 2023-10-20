@@ -3,17 +3,26 @@
 //! This module contains all code used to parameterize parallel statements. Some
 //! parameters are direct Kokkos replicates while others are Rust-specific.
 //!
-//! The most notable difference with Kokkos is the "flipped" structure of the
-//!
+//! Notable differences include:
+//! - [ExecutionPolicy] struct: Instead of having multiple types of execution policies
+//!   for each range, with re-occuring parameters, range specification is now a
+//!   subparameter of execution policies.
 //!
 
 use std::ops::Range;
 
+/// Execution Space enum. Used to specify the target device of execution for the
+/// dispatch. Defaults to [ExecutionSpace::Serial]
+#[derive(Default)]
 pub enum ExecutionSpace {
+    #[default]
+    /// Default value. Execute the kernel sequentially.
     Serial,
-    Threads,
-    Rayon,
-    OpenMP,
+    /// Target the CPU. Execute the kernel in parallel by using a feature-determined
+    /// backend.
+    DeviceCPU,
+    /// Target the GPU. NOT SUPPORTED.
+    DeviceGPU,
 }
 
 /// Range Policy enum. This holds information related to the looping structure
@@ -23,7 +32,7 @@ pub enum OuterRangePolicy<const N: usize> {
     RangePolicy(Range<usize>),
     /// N-dimensional iteration range.
     MDRangePolicy([Range<usize>; N]),
-    /// Team-based iteration policy. TODO: Make it use const generics?
+    /// Team-based iteration policy.
     TeamPolicy {
         /// Number of team.
         league_size: usize,
@@ -58,23 +67,39 @@ pub enum InnerRangePolicy<const N: usize> {
     ThreadVectorMDRange,
 }
 
-pub trait RangePolicy {}
+pub trait RangePolicy {
+    type RangeType;
+}
 
-impl<const N: usize> RangePolicy for OuterRangePolicy<N> {}
-impl<const N: usize> RangePolicy for InnerRangePolicy<N> {}
+impl<const N: usize> RangePolicy for OuterRangePolicy<N> {
+    type RangeType = Self;
+}
+impl<const N: usize> RangePolicy for InnerRangePolicy<N> {
+    type RangeType = Self;
+}
 
+/// Schedule enum. Used to set the workload scheduling policy.
+/// Defaults to [Schedule::Static].
 #[derive(Default)]
 pub enum Schedule {
     #[default]
+    /// Default value. Workload is divided once and split equally between
+    /// computational ressources.
     Static,
+    /// Dynamic scheduling. Workload is divided at start, split between computational
+    /// ressources and work stealing is enabled.
     Dynamic,
 }
 
+/// Execution Policy enum. See Kokkos documentation for explanation on their model.
 pub struct ExecutionPolicy<R>
 where
     R: RangePolicy,
 {
+    /// Execution space targetted by the dispatch.
     pub space: ExecutionSpace,
+    /// Iteration pattern used to handle the workload.
     pub range: R,
+    /// Scheduling policy for the dispatch.
     pub schedule: Schedule,
 }
