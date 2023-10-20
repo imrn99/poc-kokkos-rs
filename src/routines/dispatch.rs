@@ -17,9 +17,9 @@ pub enum DispatchError {
 impl Display for DispatchError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            DispatchError::Serial => todo!(),
-            DispatchError::CPU => todo!(),
-            DispatchError::GPU => todo!(),
+            DispatchError::Serial => write!(f, "error during serial dispatch"),
+            DispatchError::CPU => write!(f, "error during cpu dispatch"),
+            DispatchError::GPU => write!(f, "error during gpu dispatch"),
         }
     }
 }
@@ -27,9 +27,9 @@ impl Display for DispatchError {
 impl std::error::Error for DispatchError {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match self {
-            DispatchError::Serial => todo!(),
-            DispatchError::CPU => todo!(),
-            DispatchError::GPU => todo!(),
+            DispatchError::Serial => None,
+            DispatchError::CPU => None,
+            DispatchError::GPU => None,
         }
     }
 }
