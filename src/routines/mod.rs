@@ -13,10 +13,7 @@ pub mod parameters;
 
 use std::fmt::Display;
 
-use self::{
-    dispatch::DispatchError,
-    parameters::{ExecutionPolicy, RangePolicy},
-};
+use self::{dispatch::DispatchError, parameters::ExecutionPolicy};
 
 // Enums
 
@@ -54,13 +51,12 @@ impl std::error::Error for StatementError {
 
 // Statements
 
-pub fn parallel_for<const DEPTH: usize, R, F, Args, Error>(
-    execp: ExecutionPolicy<R>,
+pub fn parallel_for<const DEPTH: usize, const N: usize, F, Args, Error>(
+    execp: ExecutionPolicy<N>,
     func: F,
 ) -> Result<(), StatementError>
 // potentially a handle in the result if we can make the kernel execution async
 where
-    R: RangePolicy,
     F: FnMut(Args), // for statement should not return a result
 {
     // checks...
@@ -69,7 +65,7 @@ where
 
     // dispatch
     let res = match execp.space {
-        parameters::ExecutionSpace::Serial => dispatch::serial(),
+        parameters::ExecutionSpace::Serial => dispatch::serial(execp, func),
         parameters::ExecutionSpace::DeviceCPU => dispatch::cpu(),
         parameters::ExecutionSpace::DeviceGPU => dispatch::gpu(),
     };

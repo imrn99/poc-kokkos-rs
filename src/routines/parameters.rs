@@ -27,7 +27,7 @@ pub enum ExecutionSpace {
 
 /// Range Policy enum. This holds information related to the looping structure
 /// adopted by the routine.
-pub enum OuterRangePolicy<const N: usize> {
+pub enum RangePolicy<const N: usize> {
     /// 1D iteration range.
     RangePolicy(Range<usize>),
     /// N-dimensional iteration range.
@@ -41,11 +41,7 @@ pub enum OuterRangePolicy<const N: usize> {
         /// Number of vector
         vector_size: usize,
     },
-}
 
-/// Nested Policy enum. This is similar to [RangePolicy], but specific to nested parallel
-/// patterns. TODO: Need to add inner data to each TYPE
-pub enum InnerRangePolicy<const N: usize> {
     /// Policy used to ensure each team execute the body once and only once.
     PerTeam,
     /// Policy used to ensure each thread execute the body once and only once.
@@ -67,17 +63,6 @@ pub enum InnerRangePolicy<const N: usize> {
     ThreadVectorMDRange,
 }
 
-pub trait RangePolicy {
-    type RangeType;
-}
-
-impl<const N: usize> RangePolicy for OuterRangePolicy<N> {
-    type RangeType = Self;
-}
-impl<const N: usize> RangePolicy for InnerRangePolicy<N> {
-    type RangeType = Self;
-}
-
 /// Schedule enum. Used to set the workload scheduling policy.
 /// Defaults to [Schedule::Static].
 #[derive(Default)]
@@ -92,14 +77,11 @@ pub enum Schedule {
 }
 
 /// Execution Policy enum. See Kokkos documentation for explanation on their model.
-pub struct ExecutionPolicy<R>
-where
-    R: RangePolicy,
-{
+pub struct ExecutionPolicy<const N: usize> {
     /// Execution space targetted by the dispatch.
     pub space: ExecutionSpace,
     /// Iteration pattern used to handle the workload.
-    pub range: R,
+    pub range: RangePolicy<N>,
     /// Scheduling policy for the dispatch.
     pub schedule: Schedule,
 }

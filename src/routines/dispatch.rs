@@ -5,6 +5,8 @@
 
 use std::fmt::Display;
 
+use super::parameters::ExecutionPolicy;
+
 // enums
 
 #[derive(Debug)]
@@ -36,7 +38,13 @@ impl std::error::Error for DispatchError {
 
 // dispatch routines
 
-pub fn serial() -> Result<(), DispatchError> {
+pub fn serial<const N: usize, F, Args>(
+    execp: ExecutionPolicy<N>,
+    func: F,
+) -> Result<(), DispatchError>
+where
+    F: FnMut(Args),
+{
     todo!()
 }
 
