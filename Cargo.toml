@@ -3,10 +3,19 @@ name = "poc-kokkos-rs"
 version = "0.1.0"
 edition = "2021"
 
+# FEATURES 
+
+[features]
+serial = []
+threads = []
+rayon = ["dep:rayon"]
+
 # DEPENDENCIES
 
 [dependencies]
 cxx = "*"
+cfg-if = "*"
+rayon = {version = "*", optional=true}
 
 [dev-dependencies]
 criterion = { version = "*", features = ["html_reports"] }

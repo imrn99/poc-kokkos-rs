@@ -406,10 +406,12 @@ dependencies = [
 name = "poc-kokkos-rs"
 version = "0.1.0"
 dependencies = [
+ "cfg-if",
  "criterion",
  "cxx",
  "cxx-build",
  "rand",
+ "rayon",
 ]
 
 [[package]]

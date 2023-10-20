@@ -174,5 +174,5 @@ pub type ViewRO<'a, const N: usize, T> = ViewBase<'a, N, T>;
 pub type ViewRW<'a, const N: usize, T> = ViewBase<'a, N, T>;
 
 /// View type owning a shared reference to the data it yields access to, i.e. a
-/// thread-safe read-only mirror. Is this useful ? Shouldn't this be Arc<Mutex<T>> ?
+/// thread-safe read-only mirror. Is this useful ? Shouldn't this be `Arc<Mutex<T>>` ?
 pub type ViewShared<'a, const N: usize, T> = ViewBase<'a, N, Arc<T>>;

@@ -10,6 +10,7 @@
 
 use self::parameters::{ExecutionPolicy, RangePolicy};
 
+pub mod dispatch;
 pub mod parameters;
 
 pub fn parallel_for<const DEPTH: usize, R, F, E, Args, Error>(
@@ -22,5 +23,10 @@ where
     F: FnMut(Args), // for statement should not return a result?
     E: std::error::Error,
 {
+    // checks...
+
+    // data prep
+
+    // dispatch
     todo!()
 }
