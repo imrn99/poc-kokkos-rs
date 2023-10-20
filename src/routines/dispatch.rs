@@ -3,37 +3,62 @@
 //!
 //!
 
-pub const HANDLER: Handler = Handler {};
+use std::fmt::Display;
 
-pub enum DispatchError {}
+// enums
 
-pub struct Handler {}
+#[derive(Debug)]
+pub enum DispatchError {
+    Serial,
+    CPU,
+    GPU,
+}
 
-impl Handler {
-    pub fn dispatch_serial() -> Result<(), DispatchError> {
-        todo!()
-    }
-
-    cfg_if::cfg_if! {
-        if #[cfg(threads)] {
-            // OS threads backend
-            pub fn dispatch_cpu() -> Result<(), DispatchError> {
-                todo!()
-            }
-        } else if #[cfg(rayon)] {
-            // rayon backend
-            pub fn dispatch_cpu() -> Result<(), DispatchError> {
-                todo!()
-            }
-        } else {
-            // fallback impl
-            pub fn dispatch_cpu() -> Result<(), DispatchError> {
-                todo!()
-            }
+impl Display for DispatchError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            DispatchError::Serial => todo!(),
+            DispatchError::CPU => todo!(),
+            DispatchError::GPU => todo!(),
         }
     }
+}
 
-    pub fn dispatch_gpu() -> Result<(), DispatchError> {
-        unimplemented!()
+impl std::error::Error for DispatchError {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        match self {
+            DispatchError::Serial => todo!(),
+            DispatchError::CPU => todo!(),
+            DispatchError::GPU => todo!(),
+        }
     }
+}
+
+// dispatch routines
+
+pub fn serial() -> Result<(), DispatchError> {
+    todo!()
+}
+
+cfg_if::cfg_if! {
+    if #[cfg(threads)] {
+        // OS threads backend
+        pub fn cpu() -> Result<(), DispatchError> {
+            todo!()
+        }
+    } else if #[cfg(rayon)] {
+        // rayon backend
+        pub fn cpu() -> Result<(), DispatchError> {
+            todo!()
+        }
+    } else {
+        // fallback impl
+        pub fn cpu() -> Result<(), DispatchError> {
+            todo!()
+        }
+    }
+}
+
+pub fn gpu() -> Result<(), DispatchError> {
+    unimplemented!()
 }
