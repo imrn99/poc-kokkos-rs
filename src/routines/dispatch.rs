@@ -103,7 +103,7 @@ where
         RangePolicy::ThreadVectorRange => todo!(),
         RangePolicy::ThreadVectorMDRange => todo!(),
     };
-    todo!()
+    Ok(())
 }
 
 cfg_if::cfg_if! {
@@ -154,6 +154,6 @@ mod tests {
         })
         .unwrap();
 
-        //assert_eq!(mat, ref_mat);
+        assert_eq!(mat, ref_mat);
     }
 }

@@ -15,6 +15,7 @@ use std::{
     sync::Arc,
 };
 
+#[derive(Debug)]
 /// Common structure used as the backend of all `View` types. The main differences between
 /// usable types is the type of the `data` field.
 pub struct ViewBase<'a, const N: usize, T> {
@@ -159,6 +160,15 @@ impl<'a, const N: usize, T> IndexMut<[usize; N]> for ViewBase<'a, N, T> {
                 &mut mut_slice[flat_idx]
             }
         }
+    }
+}
+
+impl<'a, const N: usize, T: PartialEq> PartialEq for ViewBase<'a, N, T> {
+    fn eq(&self, other: &Self) -> bool {
+        self.data == other.data
+            && self.layout == other.layout
+            && self.dim == other.dim
+            && self.stride == other.stride
     }
 }
 

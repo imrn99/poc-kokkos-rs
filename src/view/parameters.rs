@@ -16,8 +16,9 @@
 /// Maximum possible depth (i.e. number of dimensions) for a view.
 pub const MAX_VIEW_DEPTH: usize = 8;
 
+#[derive(Debug, PartialEq)]
 /// Enum used to identify the type of data the view is holding. See variants for more
-/// information.
+/// information. CURRENTLY DERIVES PARTIAL EQ; MIGHT INDUCE ERRONEOUS BEHAVIOR
 pub enum DataType<'a, T> {
     /// The view owns the data.
     Owned(Vec<T>),
@@ -29,7 +30,7 @@ pub enum DataType<'a, T> {
 
 /// Enum used to represent data layout. Struct enums is used in order to increase
 /// readability.
-#[derive(Clone, Copy, Default)]
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub enum Layout<const N: usize> {
     /// Highest stride for the first index, decreasing stride as index increases.
     /// Exact stride for each index can be computed from dimensions at view initialization.
