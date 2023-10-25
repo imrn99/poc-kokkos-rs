@@ -74,6 +74,8 @@ where
 
 pub fn serial<const N: usize, F>(execp: ExecutionPolicy<N>, kernel: F) -> Result<(), DispatchError>
 where
+    // [usize; N] should eventually be replaced by a KernelArgs trait that
+    // supports the different kind of signatures you find in Kokkos
     F: FnMut([usize; N]), // FnMut is the closure trait taken by for_each method
 {
     match execp.range {
@@ -88,9 +90,9 @@ where
             recursive_loop(&ranges, kernel)
         }
         RangePolicy::TeamPolicy {
-            league_size, // number of teams, i.e. chunks
-            team_size,   // size of teams, i.e. chunk size
-            vector_size,
+            league_size, // number of teams
+            team_size,   // number of threads per team
+            vector_size, // possible third dim parallelism inside a team
         } => todo!(),
         RangePolicy::PerTeam => todo!(),
         RangePolicy::PerThread => todo!(),
@@ -125,4 +127,33 @@ cfg_if::cfg_if! {
 
 pub fn gpu() -> Result<(), DispatchError> {
     unimplemented!()
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::{
+        routines::parameters::{ExecutionSpace, Schedule},
+        view::{parameters::Layout, ViewOwned},
+    };
+
+    use super::*;
+
+    #[test]
+    fn simple_mdrange() {
+        let mut mat = ViewOwned::new_from_data(vec![0.0; 150], Layout::Right, [10, 15]);
+        let ref_mat = ViewOwned::new_from_data(vec![1.0; 150], Layout::Right, [10, 15]);
+        let rangep = RangePolicy::MDRangePolicy([0..10, 0..15]);
+        let execp = ExecutionPolicy {
+            space: ExecutionSpace::default(),
+            range: rangep,
+            schedule: Schedule::default(),
+        };
+
+        serial(execp, |[i, j]| {
+            mat[[i, j]] = 1.0;
+        })
+        .unwrap();
+
+        //assert_eq!(mat, ref_mat);
+    }
 }
