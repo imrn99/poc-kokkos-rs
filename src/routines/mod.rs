@@ -13,7 +13,10 @@ pub mod parameters;
 
 use std::fmt::Display;
 
-use self::{dispatch::DispatchError, parameters::ExecutionPolicy};
+use self::{
+    dispatch::DispatchError,
+    parameters::{ExecutionPolicy, RangePolicy},
+};
 
 // Enums
 
@@ -51,17 +54,36 @@ impl std::error::Error for StatementError {
 
 // Statements
 
-pub fn parallel_for<const DEPTH: usize, const N: usize, F, Args, Error>(
+pub fn parallel_for<const DEPTH: u8, const N: usize, F>(
     execp: ExecutionPolicy<N>,
     func: F,
 ) -> Result<(), StatementError>
 // potentially a handle in the result if we can make the kernel execution async
 where
-    F: FnMut(Args), // for statement should not return a result
+    F: FnMut([usize; N]), // for statement should not return a result
 {
     // checks...
+    // hierarchy check
+    let d: u8 = match execp.range {
+        RangePolicy::RangePolicy(_) => 0,
+        RangePolicy::MDRangePolicy(_) => 0,
+        RangePolicy::TeamPolicy {
+            league_size: _,
+            team_size: _,
+            vector_size: _,
+        } => 0,
+        RangePolicy::PerTeam => 1,
+        RangePolicy::PerThread => 1,
+        RangePolicy::TeamThreadRange => 1,
+        RangePolicy::TeamThreadMDRange => 1,
+        RangePolicy::TeamVectorRange => 1,
+        RangePolicy::TeamVectorMDRange => 1,
+        RangePolicy::ThreadVectorRange => 2,
+        RangePolicy::ThreadVectorMDRange => 2,
+    };
+    assert_eq!(d, DEPTH);
 
-    // data prep
+    // data prep?
 
     // dispatch
     let res = match execp.space {

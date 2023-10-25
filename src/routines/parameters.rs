@@ -28,6 +28,7 @@ pub enum ExecutionSpace {
 /// Range Policy enum. This holds information related to the looping structure
 /// adopted by the routine.
 pub enum RangePolicy<const N: usize> {
+    // Outer range
     /// 1D iteration range.
     RangePolicy(Range<usize>),
     /// N-dimensional iteration range.
@@ -42,11 +43,13 @@ pub enum RangePolicy<const N: usize> {
         vector_size: usize,
     },
 
+    // Specific range
     /// Policy used to ensure each team execute the body once and only once.
     PerTeam,
     /// Policy used to ensure each thread execute the body once and only once.
     PerThread,
 
+    // Medium range
     /// Medium-level depth. Can host further nests using vectors.
     TeamThreadRange,
     /// Medium-level depth. Can host further nests using vectors.
@@ -57,6 +60,7 @@ pub enum RangePolicy<const N: usize> {
     /// Medium-level depth. Cannot host further nests.
     TeamVectorMDRange,
 
+    // Inner Range
     /// Inner-level depth. Cannot host further nests.
     ThreadVectorRange,
     /// Inner-level depth. Cannot host further nests.
