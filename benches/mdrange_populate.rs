@@ -8,7 +8,8 @@ use poc_kokkos_rs::{
 };
 
 // this bench is used to evaluate the efficiency of our parallel_for
-// routine compared to regular loops.
+// routine compared to regular loops for populating a view.
+// USING SERIAL BACKEND
 
 // 1D regular for init & populating
 fn f1(length: usize) {
@@ -28,7 +29,8 @@ fn f1_b(length: usize) {
     black_box(&mut v_y); // prevents the first init to be optimized away
     let execp = ExecutionPolicy {
         space: ExecutionSpace::Serial,
-        range: RangePolicy::RangePolicy(0..length),
+        #[allow(clippy::single_range_in_vec_init)]
+        range: RangePolicy::MDRangePolicy([0..length]),
         schedule: Schedule::Static,
     };
 
