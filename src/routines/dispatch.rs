@@ -11,34 +11,35 @@ use super::parameters::{ExecutionPolicy, RangePolicy};
 
 #[derive(Debug)]
 pub enum DispatchError {
-    Serial,
-    CPU,
-    GPU,
+    Serial(&'static str),
+    CPU(&'static str),
+    GPU(&'static str),
 }
 
 impl Display for DispatchError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            DispatchError::Serial => write!(f, "error during serial dispatch"),
-            DispatchError::CPU => write!(f, "error during cpu dispatch"),
-            DispatchError::GPU => write!(f, "error during gpu dispatch"),
+            DispatchError::Serial(desc) => write!(f, "error during serial dispatch: {desc}"),
+            DispatchError::CPU(desc) => write!(f, "error during cpu dispatch: {desc}"),
+            DispatchError::GPU(desc) => write!(f, "error during gpu dispatch: {desc}"),
         }
     }
 }
 
 impl std::error::Error for DispatchError {
+    // may be useful in case of an error coming from an std call
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match self {
-            DispatchError::Serial => None,
-            DispatchError::CPU => None,
-            DispatchError::GPU => None,
+            DispatchError::Serial(_) => None,
+            DispatchError::CPU(_) => None,
+            DispatchError::GPU(_) => None,
         }
     }
 }
 
 // dispatch routines
 
-// internl routines
+// internal routines
 
 fn recursive_loop<const N: usize, F>(ranges: &[Range<usize>; N], mut kernel: F)
 where
@@ -59,6 +60,8 @@ where
             kernel(*indices)
         } else {
             // loop on next dimension; update indices
+            // can we avoid a clone by passing a slice starting one element
+            // after the unraveled range ?
             ranges[current_depth].clone().for_each(|i_current| {
                 indices[current_depth] = i_current;
                 inner(current_depth + 1, ranges, kernel, indices);
@@ -72,6 +75,7 @@ where
 
 // serial dispatch
 
+/// Dispatch routine for serial backend.
 pub fn serial<const N: usize, F>(execp: ExecutionPolicy<N>, kernel: F) -> Result<(), DispatchError>
 where
     // [usize; N] should eventually be replaced by a KernelArgs trait that
@@ -81,7 +85,11 @@ where
     match execp.range {
         RangePolicy::RangePolicy(range) => {
             // serial, 1D range
-            assert_eq!(N, 1);
+            if N != 1 {
+                return Err(DispatchError::Serial(
+                    "Dispatch uses N>1 for a 1D RangePolicy",
+                ));
+            }
             // making indices N-sized arrays is necessary, even with the assertion...
             range.into_iter().map(|i| [i; N]).for_each(kernel)
         }
@@ -90,14 +98,39 @@ where
             recursive_loop(&ranges, kernel)
         }
         RangePolicy::TeamPolicy {
-            league_size, // number of teams
-            team_size,   // number of threads per team
-            vector_size, // possible third dim parallelism inside a team
-        } => todo!(),
-        RangePolicy::PerTeam => todo!(),
-        RangePolicy::PerThread => todo!(),
-        RangePolicy::TeamThreadRange => todo!(),
-        RangePolicy::TeamThreadMDRange => todo!(),
+            league_size,    // number of teams; akin to # of work items/batches
+            team_size: _,   // number of threads per team; ignored in serial dispatch
+            vector_size: _, // possible third dim parallelism; ignored in serial dispatch?
+        } => {
+            // interpret # of teams as # of work items (chunks);
+            // necessary because serial dispatch is the fallback implementation
+            // we ignore team size & vector size? since there's no parallelism here
+
+            // is it even possible to use chunks? It would require either:
+            //  - awareness of used external data
+            //  - owning the used data; maybe in the TeamPolicy struct
+            // 2nd option is the more plausible but it creates issues when accessing
+            // multiple views for example; It also seems incompatible with the paradigm
+            todo!()
+        }
+        RangePolicy::PerTeam => {
+            // used inside a team dispatch
+            // executes the kernel once per team
+            todo!()
+        }
+        RangePolicy::PerThread => {
+            // used inside a team dispatch
+            // executes the kernel once per threads of the team
+            todo!()
+        }
+        RangePolicy::TeamThreadRange => {
+            // same as RangePolicy but inside a team
+            todo!()
+        }
+        RangePolicy::TeamThreadMDRange => {
+            // same as MDRangePolicy but inside a team
+            todo!()
+        }
         RangePolicy::TeamVectorRange => todo!(),
         RangePolicy::TeamVectorMDRange => todo!(),
         RangePolicy::ThreadVectorRange => todo!(),
