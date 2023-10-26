@@ -75,4 +75,5 @@ pub mod ffi {
 }
 
 pub mod functor;
+pub mod routines;
 pub mod view;

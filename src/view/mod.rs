@@ -15,6 +15,7 @@ use std::{
     sync::Arc,
 };
 
+#[derive(Debug)]
 /// Common structure used as the backend of all `View` types. The main differences between
 /// usable types is the type of the `data` field.
 pub struct ViewBase<'a, const N: usize, T> {
@@ -162,6 +163,15 @@ impl<'a, const N: usize, T> IndexMut<[usize; N]> for ViewBase<'a, N, T> {
     }
 }
 
+impl<'a, const N: usize, T: PartialEq> PartialEq for ViewBase<'a, N, T> {
+    fn eq(&self, other: &Self) -> bool {
+        self.data == other.data
+            && self.layout == other.layout
+            && self.dim == other.dim
+            && self.stride == other.stride
+    }
+}
+
 /// View type owning the data it yields access to, i.e. "original" view.
 pub type ViewOwned<'a, const N: usize, T> = ViewBase<'a, N, T>;
 
@@ -174,5 +184,5 @@ pub type ViewRO<'a, const N: usize, T> = ViewBase<'a, N, T>;
 pub type ViewRW<'a, const N: usize, T> = ViewBase<'a, N, T>;
 
 /// View type owning a shared reference to the data it yields access to, i.e. a
-/// thread-safe read-only mirror. Is this useful ? Shouldn't this be Arc<Mutex<T>> ?
+/// thread-safe read-only mirror. Is this useful ? Shouldn't this be `Arc<Mutex<T>>` ?
 pub type ViewShared<'a, const N: usize, T> = ViewBase<'a, N, Arc<T>>;

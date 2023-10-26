@@ -16,8 +16,10 @@
 /// Maximum possible depth (i.e. number of dimensions) for a view.
 pub const MAX_VIEW_DEPTH: usize = 8;
 
+#[derive(Debug)]
 /// Enum used to identify the type of data the view is holding. See variants for more
-/// information.
+/// information. The policy used to implement the [PartialEq] trait is based on Kokkos'
+/// [`equal` algorithm][https://kokkos.github.io/kokkos-core-wiki/API/algorithms/std-algorithms/all/StdEqual.html]
 pub enum DataType<'a, T> {
     /// The view owns the data.
     Owned(Vec<T>),
@@ -27,9 +29,21 @@ pub enum DataType<'a, T> {
     MutBorrowed(&'a mut [T]),
 }
 
+/// Equality by value or by data referenced ?
+impl<'a, T: PartialEq> PartialEq for DataType<'a, T> {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Self::Owned(l0), Self::Owned(r0)) => l0 == r0,
+            (Self::Borrowed(l0), Self::Borrowed(r0)) => l0 == r0,
+            (Self::MutBorrowed(l0), Self::MutBorrowed(r0)) => l0 == r0,
+            _ => false,
+        }
+    }
+}
+
 /// Enum used to represent data layout. Struct enums is used in order to increase
 /// readability.
-#[derive(Clone, Copy, Default)]
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub enum Layout<const N: usize> {
     /// Highest stride for the first index, decreasing stride as index increases.
     /// Exact stride for each index can be computed from dimensions at view initialization.
