@@ -37,3 +37,7 @@ harness = false
 [[bench]]
 name = "view_access"
 harness = false
+
+[[bench]]
+name = "view_populate"
+harness = false

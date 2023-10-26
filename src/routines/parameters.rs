@@ -13,7 +13,7 @@ use std::ops::Range;
 
 /// Execution Space enum. Used to specify the target device of execution for the
 /// dispatch. Defaults to [ExecutionSpace::Serial]
-#[derive(Default)]
+#[derive(Debug, Default, Clone)]
 pub enum ExecutionSpace {
     #[default]
     /// Default value. Execute the kernel sequentially.
@@ -25,6 +25,7 @@ pub enum ExecutionSpace {
     DeviceGPU,
 }
 
+#[derive(Debug, Clone)]
 /// Range Policy enum. This holds information related to the looping structure
 /// adopted by the routine.
 pub enum RangePolicy<const N: usize> {
@@ -69,7 +70,7 @@ pub enum RangePolicy<const N: usize> {
 
 /// Schedule enum. Used to set the workload scheduling policy.
 /// Defaults to [Schedule::Static].
-#[derive(Default)]
+#[derive(Debug, Default, Clone)]
 pub enum Schedule {
     #[default]
     /// Default value. Workload is divided once and split equally between
@@ -80,6 +81,7 @@ pub enum Schedule {
     Dynamic,
 }
 
+#[derive(Debug, Clone)]
 /// Execution Policy enum. See Kokkos documentation for explanation on their model.
 pub struct ExecutionPolicy<const N: usize> {
     /// Execution space targetted by the dispatch.
