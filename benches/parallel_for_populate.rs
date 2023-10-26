@@ -7,23 +7,22 @@ use poc_kokkos_rs::{
     view::{parameters::Layout, ViewOwned},
 };
 
-// this bench is used to evaluate the  efficiency of views & the our
-// parallel_for routine through an array initialization.
+// this bench is used to evaluate the efficiency of our parallel_for
+// routine compared to regular loops.
 
-// 1D vector init & populating
+// 1D regular for init & populating
 fn f1(length: usize) {
-    let mut y: Vec<f64> = vec![0.0; length];
-    black_box(&mut y); // prevents the first init to be optimized away
-    (0..1000).for_each(|_| {
+    let mut v_y = ViewOwned::new_from_data(vec![0.0; length], Layout::Right, [length]);
+    black_box(&mut v_y); // prevents the first init to be optimized away
+    (0..500).for_each(|_| {
         (0..length).for_each(|i| {
-            black_box(i); // without this, vectorization occurs
-            y[i] = 1.0;
+            v_y[[i]] = 1.0;
         });
-        black_box(&y);
+        black_box(&v_y);
     })
 }
 
-// 1D view init & populating
+// 1D parallel_for (serial) init & populating
 fn f1_b(length: usize) {
     let mut v_y = ViewOwned::new_from_data(vec![0.0; length], Layout::Right, [length]);
     black_box(&mut v_y); // prevents the first init to be optimized away
@@ -33,7 +32,7 @@ fn f1_b(length: usize) {
         schedule: Schedule::Static,
     };
 
-    (0..1000).for_each(|_| {
+    (0..500).for_each(|_| {
         let execp_loc = execp.clone();
         parallel_for::<0, 1, _>(execp_loc, |[i]| v_y[[i]] = 1.0).unwrap();
         black_box(&v_y);
@@ -46,12 +45,16 @@ pub fn criterion_benchmark(c: &mut Criterion) {
     let length = 2_usize.pow(DATA_SIZE);
 
     let mut group1 = c.benchmark_group("1D init & populate");
-    group1.bench_with_input(BenchmarkId::new("Vector Perfs", ""), &(length), |b, n| {
-        b.iter(|| f1(*n))
-    });
-    group1.bench_with_input(BenchmarkId::new("View Perfs", ""), &(length), |b, n| {
-        b.iter(|| f1_b(*n))
-    });
+    group1.bench_with_input(
+        BenchmarkId::new("Regular for (serial)", ""),
+        &(length),
+        |b, n| b.iter(|| f1(*n)),
+    );
+    group1.bench_with_input(
+        BenchmarkId::new("Parallel for (serial)", ""),
+        &(length),
+        |b, n| b.iter(|| f1_b(*n)),
+    );
     group1.finish();
 }
 

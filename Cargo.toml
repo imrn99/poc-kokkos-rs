@@ -39,5 +39,5 @@ name = "view_access"
 harness = false
 
 [[bench]]
-name = "view_populate"
+name = "parallel_for_populate"
 harness = false
