@@ -41,6 +41,7 @@ impl std::error::Error for DispatchError {
 
 // internal routines
 
+/// Builds a N-depth nested loop executing a kernel using the N resulting indices.
 fn recursive_loop<const N: usize, F>(ranges: &[Range<usize>; N], mut kernel: F)
 where
     F: FnMut([usize; N]),
@@ -94,11 +95,12 @@ where
             range.into_iter().map(|i| [i; N]).for_each(kernel)
         }
         RangePolicy::MDRangePolicy(ranges) => {
-            // macros would pbly be more efficient
-            recursive_loop(&ranges, kernel)
+            // Kokkos does tiling to handle a MDRanges, in the case of serial
+            // execution, we simply do the nested loop
+            recursive_loop(&ranges, kernel) // macros would pbly be more efficient
         }
         RangePolicy::TeamPolicy {
-            league_size,    // number of teams; akin to # of work items/batches
+            league_size: _, // number of teams; akin to # of work items/batches
             team_size: _,   // number of threads per team; ignored in serial dispatch
             vector_size: _, // possible third dim parallelism; ignored in serial dispatch?
         } => {
@@ -111,6 +113,8 @@ where
             //  - owning the used data; maybe in the TeamPolicy struct
             // 2nd option is the more plausible but it creates issues when accessing
             // multiple views for example; It also seems incompatible with the paradigm
+
+            // -> build a team handle & let the user write its kernel using it
             todo!()
         }
         RangePolicy::PerTeam => {
@@ -142,23 +146,32 @@ where
 cfg_if::cfg_if! {
     if #[cfg(threads)] {
         // OS threads backend
-        pub fn cpu() -> Result<(), DispatchError> {
+        pub fn cpu<const N: usize, F>(execp: ExecutionPolicy<N>, kernel: F) -> Result<(), DispatchError>
+        where
+            F: FnMut([usize; N]), {
             todo!()
         }
     } else if #[cfg(rayon)] {
         // rayon backend
-        pub fn cpu() -> Result<(), DispatchError> {
+        pub fn cpu<const N: usize, F>(execp: ExecutionPolicy<N>, kernel: F) -> Result<(), DispatchError>
+        where
+            F: FnMut([usize; N]), {
             todo!()
         }
     } else {
-        // fallback impl
-        pub fn cpu() -> Result<(), DispatchError> {
-            todo!()
+        // fallback impl: serial
+        pub fn cpu<const N: usize, F>(execp: ExecutionPolicy<N>, kernel: F) -> Result<(), DispatchError>
+        where
+            F: FnMut([usize; N]), {
+            serial(execp, kernel)
         }
     }
 }
 
-pub fn gpu() -> Result<(), DispatchError> {
+pub fn gpu<const N: usize, F>(_execp: ExecutionPolicy<N>, _kernel: F) -> Result<(), DispatchError>
+where
+    F: FnMut([usize; N]),
+{
     unimplemented!()
 }
 

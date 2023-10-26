@@ -88,8 +88,8 @@ where
     // dispatch
     let res = match execp.space {
         parameters::ExecutionSpace::Serial => dispatch::serial(execp, func),
-        parameters::ExecutionSpace::DeviceCPU => dispatch::cpu(),
-        parameters::ExecutionSpace::DeviceGPU => dispatch::gpu(),
+        parameters::ExecutionSpace::DeviceCPU => dispatch::cpu(execp, func),
+        parameters::ExecutionSpace::DeviceGPU => dispatch::gpu(execp, func),
     };
 
     // Ok or converts error
