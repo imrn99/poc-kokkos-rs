@@ -139,6 +139,25 @@ mod tests {
     use super::*;
 
     #[test]
+    fn simple_range() {
+        let mut mat = ViewOwned::new_from_data(vec![0.0; 15], Layout::Right, [15]);
+        let ref_mat = ViewOwned::new_from_data(vec![1.0; 15], Layout::Right, [15]);
+        let rangep = RangePolicy::RangePolicy(0..15);
+        let execp = ExecutionPolicy {
+            space: ExecutionSpace::default(),
+            range: rangep,
+            schedule: Schedule::default(),
+        };
+
+        serial(execp, |[i]| {
+            mat[[i]] = 1.0;
+        })
+        .unwrap();
+
+        assert_eq!(mat, ref_mat);
+    }
+
+    #[test]
     fn simple_mdrange() {
         let mut mat = ViewOwned::new_from_data(vec![0.0; 150], Layout::Right, [10, 15]);
         let ref_mat = ViewOwned::new_from_data(vec![1.0; 150], Layout::Right, [10, 15]);
@@ -151,6 +170,26 @@ mod tests {
 
         serial(execp, |[i, j]| {
             mat[[i, j]] = 1.0;
+        })
+        .unwrap();
+
+        assert_eq!(mat, ref_mat);
+    }
+
+    #[test]
+    fn dim1_mdrange() {
+        let mut mat = ViewOwned::new_from_data(vec![0.0; 15], Layout::Right, [15]);
+        let ref_mat = ViewOwned::new_from_data(vec![1.0; 15], Layout::Right, [15]);
+        #[allow(clippy::single_range_in_vec_init)]
+        let rangep = RangePolicy::MDRangePolicy([0..15]);
+        let execp = ExecutionPolicy {
+            space: ExecutionSpace::default(),
+            range: rangep,
+            schedule: Schedule::default(),
+        };
+
+        serial(execp, |[i]| {
+            mat[[i]] = 1.0;
         })
         .unwrap();
 
