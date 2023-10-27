@@ -28,12 +28,14 @@
 //! All results are compiled to the `target/criterion/` folder. The following
 //! benchmarks are available:
 //!
-//! - `gemv`: Matrix-Vector product computation; This is used to put numbers on the
+//! - `layout`: Matrix-Vector product computation; This is used to put numbers on the
 //!   importance of data layout in memory.
 //! - `view_init`: Compare initialization performances of regular vectors to [Views][view]; This
 //!   is used to spot potential scaling issues induced by the more complex structure of Views.
 //! - `view_access`: Compare data access performances of regular vectors to [Views][view]; This
 //!   is used to spot potential scaling issues induced by the more complex structure of Views.
+//! - `mdrange_populate`: Compare performance of our implementation of MDRangePolicy compared to
+//!   regular implementation. Currently, only a serial implementation with no tiling is tested.
 //!
 //!
 //! ### Examples
