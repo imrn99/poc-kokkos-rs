@@ -27,7 +27,7 @@ cxx-build = "*"
 # BENCHMARKS
 
 [[bench]]
-name = "gemv"
+name = "layout"
 harness = false
 
 [[bench]]
