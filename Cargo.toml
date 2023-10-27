@@ -27,7 +27,7 @@ cxx-build = "*"
 # BENCHMARKS
 
 [[bench]]
-name = "gemv"
+name = "layout"
 harness = false
 
 [[bench]]
@@ -36,4 +36,8 @@ harness = false
 
 [[bench]]
 name = "view_access"
+harness = false
+
+[[bench]]
+name = "mdrange_populate"
 harness = false

@@ -1,6 +1,6 @@
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
 
-// Currently a partial gemv
+// Currently a partial gemv showing the importance of layout
 // y = Ax / y = xA
 // instead of
 // y = s1*Au + s2*v
@@ -85,7 +85,7 @@ pub fn criterion_benchmark(c: &mut Criterion) {
     // Generate/Define the input
     let data_size: u32 = 11; // 2048 length vector, 2048*2048 matrix
 
-    let mut group = c.benchmark_group("gemv");
+    let mut group = c.benchmark_group("Layout Effect");
     group.bench_with_input(
         BenchmarkId::new("Matrix-Vector Product (iterators)", ""),
         &data_size,
