@@ -13,6 +13,8 @@ pub mod parameters;
 
 use std::fmt::Display;
 
+use crate::functor::{ForKernel, KernelArgs};
+
 use self::{
     dispatch::DispatchError,
     parameters::{ExecutionPolicy, RangePolicy},
@@ -22,8 +24,9 @@ use self::{
 
 #[derive(Debug)]
 pub enum StatementError {
-    InconsistentDepth,
     Dispatch(DispatchError),
+    InconsistentDepth,
+    InconsistentExecSpace,
 }
 
 impl From<DispatchError> for StatementError {
@@ -35,10 +38,13 @@ impl From<DispatchError> for StatementError {
 impl Display for StatementError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            StatementError::Dispatch(e) => write!(f, "{}", e),
             StatementError::InconsistentDepth => {
                 write!(f, "inconsistent depth & range policy association")
             }
-            StatementError::Dispatch(e) => write!(f, "{}", e),
+            StatementError::InconsistentExecSpace => {
+                write!(f, "inconsistent depth & range policy association")
+            }
         }
     }
 }
@@ -46,21 +52,24 @@ impl Display for StatementError {
 impl std::error::Error for StatementError {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match self {
-            StatementError::InconsistentDepth => None,
             StatementError::Dispatch(e) => Some(e),
+            StatementError::InconsistentDepth => None,
+            StatementError::InconsistentExecSpace => None,
         }
     }
 }
 
 // Statements
 
-pub fn parallel_for<const DEPTH: u8, const N: usize, F>(
+/// Parallel For statement.
+pub fn parallel_for<const DEPTH: u8, const N: usize, F, Args>(
     execp: ExecutionPolicy<N>,
     func: F,
 ) -> Result<(), StatementError>
 // potentially a handle in the result if we can make the kernel execution async
 where
-    F: FnMut([usize; N]), // for statement should not return a result
+    F: ForKernel<Args>, // for statement should not return a result
+    Args: KernelArgs,
 {
     // checks...
     // hierarchy check

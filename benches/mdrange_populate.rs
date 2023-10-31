@@ -1,8 +1,8 @@
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
 use poc_kokkos_rs::{
     routines::{
-        parallel_for,
         parameters::{ExecutionPolicy, ExecutionSpace, RangePolicy, Schedule},
+        serial_for,
     },
     view::{parameters::Layout, ViewOwned},
 };
@@ -36,7 +36,7 @@ fn f1_b(length: usize) {
 
     (0..500).for_each(|_| {
         let execp_loc = execp.clone();
-        parallel_for::<0, 1, _>(execp_loc, |[i]| v_y[[i]] = 1.0).unwrap();
+        serial_for::<0, 1, _>(execp_loc, |[i]| v_y[[i]] = 1.0).unwrap();
         black_box(&v_y);
     })
 }
@@ -74,7 +74,7 @@ fn f2_b(length: usize) {
         schedule: Schedule::Static,
     };
 
-    parallel_for::<0, 3, _>(execp, |indices| v_y[indices] = 1.0).unwrap();
+    serial_for::<0, 3, _>(execp, |indices| v_y[indices] = 1.0).unwrap();
     black_box(&v_y);
 }
 
@@ -115,7 +115,7 @@ fn f3_b(length: usize) {
         schedule: Schedule::Static,
     };
 
-    parallel_for::<0, 5, _>(execp, |indices| v_y[indices] = 1.0).unwrap();
+    serial_for::<0, 5, _>(execp, |indices| v_y[indices] = 1.0).unwrap();
     black_box(&v_y);
 }
 
