@@ -86,10 +86,7 @@ pub fn serial<const N: usize>(
                 ));
             }
             // making indices N-sized arrays is necessary, even with the assertion...
-            range
-                .into_iter()
-                .map(|i| KernelArgs::Index1D(i))
-                .for_each(kernel)
+            range.into_iter().map(KernelArgs::Index1D).for_each(kernel)
         }
         RangePolicy::MDRangePolicy(ranges) => {
             // Kokkos does tiling to handle a MDRanges, in the case of serial
@@ -151,10 +148,10 @@ where
 
 #[cfg(feature = "rayon")]
 /// Dispatch routine for CPU parallelization using [rayon][https://docs.rs/rayon/latest/rayon/].
-pub fn cpu<const N: usize, F>(execp: ExecutionPolicy<N>, kernel: F) -> Result<(), DispatchError>
-where
-    F: Fn([usize; N]) + Sync + Send,
-{
+pub fn cpu<const N: usize>(
+    execp: ExecutionPolicy<N>,
+    kernel: ForKernel<N>,
+) -> Result<(), DispatchError> {
     match execp.range {
         RangePolicy::RangePolicy(range) => {
             // serial, 1D range
@@ -164,11 +161,14 @@ where
                 ));
             }
             // making indices N-sized arrays is necessary, even with the assertion...
-            range.into_par_iter().map(|i| [i; N]).for_each(kernel)
+            range
+                .into_par_iter()
+                .map(KernelArgs::Index1D)
+                .for_each(kernel)
         }
-        RangePolicy::MDRangePolicy(ranges) => {
-            // Kokkos does tiling to handle a MDRanges,
-            todo!()
+        RangePolicy::MDRangePolicy(_) => {
+            // Kokkos does tiling to handle a MDRanges
+            unimplemented!()
         }
         RangePolicy::TeamPolicy {
             league_size: _, // number of teams; akin to # of work items/batches

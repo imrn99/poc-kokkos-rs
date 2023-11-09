@@ -22,6 +22,7 @@ pub enum KernelArgs<const N: usize> {
 }
 
 #[cfg(feature = "rayon")]
-pub type ForKernel = Box<dyn Fn(dyn KernelArgs) + Send + Sync>;
+pub type ForKernel<'a, const N: usize> = Box<dyn Fn(KernelArgs<N>) + Send + Sync + 'a>;
 
+#[cfg(not(any(feature = "rayon", feature = "threads")))]
 pub type ForKernel<'a, const N: usize> = Box<dyn FnMut(KernelArgs<N>) + 'a>;
