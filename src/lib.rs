@@ -53,8 +53,8 @@
 //!
 //! The following examples are available:
 //!
-//! - `hello-world`: ...
-//! - `openmp-parallel`: ...
+//! - `hello_world`: ...
+//! - `hello_world_omp`: ...
 //!
 //!
 //! ## Compilation
@@ -64,9 +64,9 @@
 //! - On MacOs: Does not work with Apple Clang
 //!   - Solution: Homebrew Clang or tinker with flags to get OpenMP to work
 //! - On MacOs: XCode 15.0 was shipped with a broken `ld`
-//!   - Solution: pass the flag `-ld_classic` to the linker.  This flag isn't
-//!     recognized by the `ld` of previous versions of XCode. Remove it from
-//!     `build.rs` if necessary.
+//!   - Solution: pass the flag `-ld_classic` to the linker. Note that this flag isn't
+//!     recognized by the `ld` of previous versions of XCode. The line needed is
+//!     written in the `build.rs` script, it just needs to be uncommented if necessary.
 //!
 //! [1]: https://kokkos.github.io/kokkos-core-wiki/index.html
 //! [2]: https://docs.rs/rayon/latest/rayon/
