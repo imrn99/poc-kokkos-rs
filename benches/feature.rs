@@ -35,7 +35,7 @@ fn f1(length: usize) {
 
 pub fn criterion_benchmark(c: &mut Criterion) {
     // Generate/Define the input
-    const DATA_SIZE: u32 = 20; // 2048 length vector, 2048*2048 matrix
+    const DATA_SIZE: u32 = 20;
     let length = 2_usize.pow(DATA_SIZE);
 
     let mut group = c.benchmark_group("parallel_for");

@@ -6,7 +6,6 @@
 //! `parallel_for` is currently the only statement considered for implementation;
 //!
 //! Parameters of aforementionned statements are defined in the [`parameters`] sub-module.
-//!
 
 pub mod dispatch;
 pub mod parameters;
@@ -22,10 +21,15 @@ use self::{
 
 // Enums
 
+/// Enum used to classify possible errors occuring in a parallel statement.
 #[derive(Debug)]
 pub enum StatementError {
+    /// Error occured during dispatch; The specific [DispatchError] is
+    /// used as the internal value of this variant.
     Dispatch(DispatchError),
+    /// Error raised when parallel hierarchy isn't respected.
     InconsistentDepth,
+    /// ...
     InconsistentExecSpace,
 }
 
@@ -61,7 +65,9 @@ impl std::error::Error for StatementError {
 
 // Statements
 
-/// Parallel For statement.
+/// Parallel For statement. The `const` generic argument should
+/// be `0`, `1`, or `2` according to its position in a nested structure
+/// (`0` being the most outer level, `2` the most inner level).
 pub fn parallel_for<const DEPTH: u8, const N: usize>(
     execp: ExecutionPolicy<N>,
     func: ForKernel<N>,

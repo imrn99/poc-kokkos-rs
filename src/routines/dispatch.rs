@@ -1,7 +1,8 @@
+//! kernel dispatch code
 //!
-//!
-//!
-//!
+//! This module contains all code used to dispatch computational kernels
+//! onto specified devices. Note that the documentation is feature-specific when the
+//! items are, i.e. documentation is altered by enabled features.
 
 #[cfg(feature = "rayon")]
 use rayon::prelude::*;
@@ -13,10 +14,16 @@ use crate::functor::{ForKernel, KernelArgs};
 
 // enums
 
+/// Enum used to classify possible dispatch errors.
+///
+/// In all variants, the internal value is a description of the error.
 #[derive(Debug)]
 pub enum DispatchError {
+    /// Error occured during serial dispatch.
     Serial(&'static str),
+    /// Error occured during parallel CPU dispatch.
     CPU(&'static str),
+    /// Error occured during GPU dispatch.
     GPU(&'static str),
 }
 
@@ -42,6 +49,8 @@ impl std::error::Error for DispatchError {
 // internal routines
 
 /// Builds a N-depth nested loop executing a kernel using the N resulting indices.
+/// Technically, this should be replaced by a tiling function, for both serial and parallel
+/// implementations. In practice, the cost of tiling might be too high in a serial context.
 fn recursive_loop<const N: usize>(ranges: &[Range<usize>; N], mut kernel: ForKernel<N>) {
     // handles recursions
     fn inner<const N: usize>(
@@ -71,8 +80,9 @@ fn recursive_loop<const N: usize>(ranges: &[Range<usize>; N], mut kernel: ForKer
 
 // serial dispatch
 
-/// Dispatch routine for serial backend. Depending on the future parallel dispatch implem, this
-/// could be deleted.
+/// Dispatch routine for serial backend.
+///
+/// This also serve as the fallback CPU dispatch routine in specific cases.
 pub fn serial<const N: usize>(
     execp: ExecutionPolicy<N>,
     kernel: ForKernel<N>,
@@ -85,7 +95,6 @@ pub fn serial<const N: usize>(
                     "Dispatch uses N>1 for a 1D RangePolicy",
                 ));
             }
-            // making indices N-sized arrays is necessary, even with the assertion...
             range.into_iter().map(KernelArgs::Index1D).for_each(kernel)
         }
         RangePolicy::MDRangePolicy(ranges) => {
@@ -138,7 +147,9 @@ pub fn serial<const N: usize>(
 }
 
 #[cfg(feature = "threads")]
-/// Dispatch routine for CPU parallelization using [std::thread].
+/// Dispatch routine for CPU parallelization.
+///
+/// Backend-specific function for [std::thread] usage.
 pub fn cpu<const N: usize, F>(execp: ExecutionPolicy<N>, kernel: F) -> Result<(), DispatchError>
 where
     F: FnMut([usize; N]) + Sync + Send,
@@ -147,7 +158,9 @@ where
 }
 
 #[cfg(feature = "rayon")]
-/// Dispatch routine for CPU parallelization using [rayon][https://docs.rs/rayon/latest/rayon/].
+/// Dispatch routine for CPU parallelization.
+///
+/// Backend-specific function for [rayon](https://docs.rs/rayon/latest/rayon/) usage.
 pub fn cpu<const N: usize>(
     execp: ExecutionPolicy<N>,
     kernel: ForKernel<N>,
@@ -215,7 +228,9 @@ pub fn cpu<const N: usize>(
 }
 
 #[cfg(not(any(feature = "rayon", feature = "threads")))]
-/// Fallback dispatch routine for CPU execution. Calls the serial dispatch routine.
+/// Dispatch routine for CPU parallelization.
+///
+/// Backend-specific function that falls back to serial execution.
 pub fn cpu<const N: usize>(
     execp: ExecutionPolicy<N>,
     kernel: ForKernel<N>,
@@ -223,6 +238,7 @@ pub fn cpu<const N: usize>(
     serial(execp, kernel)
 }
 
+/// Dispatch routine for GPU parallelization. UNIMPLEMENTED
 pub fn gpu<const N: usize>(
     _execp: ExecutionPolicy<N>,
     _kernel: ForKernel<N>,

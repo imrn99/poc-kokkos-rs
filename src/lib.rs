@@ -2,12 +2,16 @@
 //!
 //! ## Scope of the Project
 //!
-//! The main focus of this Proof-of-Concept is the architecture and approach used by
+//! ~~The main focus of this Proof-of-Concept is the architecture and approach used by
 //! [Kokkos][1] for data management. While multiple targets support (Serial, [rayon][2],
-//! OpenMP) could be interesting, it is not the priority.
+//! OpenMP) could be interesting, it is not the priority.~~
+//!
+//! Rudimentary data structure implementation being done, the goal is now to write a simple
+//! program using a `parallel_for` statement with satisfying portability as defined by Kokkos.
 //!
 //! Additionally, some features of Kokkos are not reproducible in Rust (GPU targetting,
 //! templating); These create limits for the implementation, hence the existence of this PoC.
+//!
 //!
 //!
 //! ## Quickstart
@@ -36,6 +40,9 @@
 //!   is used to spot potential scaling issues induced by the more complex structure of Views.
 //! - `mdrange_populate`: Compare performance of our implementation of MDRangePolicy compared to
 //!   regular implementation. Currently, only a serial implementation with no tiling is tested.
+//! - `feature`: Assess the correct usage of feature-specific backend. This one is meant to be run
+//!   multiple times, with varying features each time (e.g. no feature, then `rayon` to observe the
+//!   speedup).
 //!
 //!
 //! ### Examples
@@ -65,6 +72,7 @@
 //! [2]: https://docs.rs/rayon/latest/rayon/
 
 #[cxx::bridge(namespace = "")]
+/// C++ inter-op code
 pub mod ffi {
     // C++ types and signatures exposed to Rust.
     unsafe extern "C++" {
