@@ -13,7 +13,7 @@ pub mod parameters;
 
 use std::fmt::Display;
 
-use crate::functor::{ForKernel, KernelArgs};
+use crate::functor::ForKernel;
 
 use self::{
     dispatch::DispatchError,
@@ -62,15 +62,10 @@ impl std::error::Error for StatementError {
 // Statements
 
 /// Parallel For statement.
-pub fn parallel_for<const DEPTH: u8, const N: usize, F, Args>(
+pub fn parallel_for<const DEPTH: u8, const N: usize>(
     execp: ExecutionPolicy<N>,
-    func: F,
-) -> Result<(), StatementError>
-// potentially a handle in the result if we can make the kernel execution async
-where
-    F: ForKernel<Args>, // for statement should not return a result
-    Args: KernelArgs,
-{
+    func: ForKernel<N>,
+) -> Result<(), StatementError> {
     // checks...
     // hierarchy check
     let d: u8 = match execp.range {

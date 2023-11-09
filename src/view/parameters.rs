@@ -19,7 +19,7 @@ pub const MAX_VIEW_DEPTH: usize = 8;
 #[derive(Debug)]
 /// Enum used to identify the type of data the view is holding. See variants for more
 /// information. The policy used to implement the [PartialEq] trait is based on Kokkos'
-/// [`equal` algorithm][https://kokkos.github.io/kokkos-core-wiki/API/algorithms/std-algorithms/all/StdEqual.html]
+/// [`equal` algorithm](https://kokkos.github.io/kokkos-core-wiki/API/algorithms/std-algorithms/all/StdEqual.html).
 pub enum DataType<'a, T> {
     /// The view owns the data.
     Owned(Vec<T>),

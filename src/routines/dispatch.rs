@@ -42,25 +42,18 @@ impl std::error::Error for DispatchError {
 // internal routines
 
 /// Builds a N-depth nested loop executing a kernel using the N resulting indices.
-fn recursive_loop<const N: usize, F, Args>(ranges: &[Range<usize>; N], mut kernel: F)
-where
-    F: ForKernel<Args>,
-    Args: KernelArgs,
-{
+fn recursive_loop<const N: usize>(ranges: &[Range<usize>; N], mut kernel: ForKernel<N>) {
     // handles recursions
-    fn inner<const N: usize, F, Args>(
+    fn inner<const N: usize>(
         current_depth: usize,
         ranges: &[Range<usize>; N],
-        kernel: &mut F,
+        kernel: &mut ForKernel<N>,
         indices: &mut [usize; N],
-    ) where
-        F: ForKernel<Args>,
-        Args: KernelArgs,
-    {
+    ) {
         if current_depth == N {
             // all loops unraveled
             // call the kernel
-            kernel(*indices)
+            kernel(KernelArgs::IndexND(*indices))
         } else {
             // loop on next dimension; update indices
             // can we avoid a clone by passing a slice starting one element
@@ -80,16 +73,10 @@ where
 
 /// Dispatch routine for serial backend. Depending on the future parallel dispatch implem, this
 /// could be deleted.
-pub fn serial<const N: usize, F, Args>(
+pub fn serial<const N: usize>(
     execp: ExecutionPolicy<N>,
-    kernel: F,
-) -> Result<(), DispatchError>
-where
-    // [usize; N] should eventually be replaced by a KernelArgs trait that
-    // supports the different kind of signatures you find in Kokkos
-    F: ForKernel<Args>,
-    Args: KernelArgs,
-{
+    kernel: ForKernel<N>,
+) -> Result<(), DispatchError> {
     match execp.range {
         RangePolicy::RangePolicy(range) => {
             // serial, 1D range
@@ -99,7 +86,10 @@ where
                 ));
             }
             // making indices N-sized arrays is necessary, even with the assertion...
-            range.into_iter().map(|i| [i; N]).for_each(kernel)
+            range
+                .into_iter()
+                .map(|i| KernelArgs::Index1D(i))
+                .for_each(kernel)
         }
         RangePolicy::MDRangePolicy(ranges) => {
             // Kokkos does tiling to handle a MDRanges, in the case of serial
@@ -226,36 +216,27 @@ where
 
 #[cfg(not(any(feature = "rayon", feature = "threads")))]
 /// Fallback dispatch routine for CPU execution. Calls the serial dispatch routine.
-pub fn cpu<const N: usize, F, Args>(
+pub fn cpu<const N: usize>(
     execp: ExecutionPolicy<N>,
-    kernel: F,
-) -> Result<(), DispatchError>
-where
-    F: ForKernel<Args>,
-    Args: KernelArgs,
-{
+    kernel: ForKernel<N>,
+) -> Result<(), DispatchError> {
     serial(execp, kernel)
 }
 
-pub fn gpu<const N: usize, F, Args>(
+pub fn gpu<const N: usize>(
     _execp: ExecutionPolicy<N>,
-    _kernel: F,
-) -> Result<(), DispatchError>
-where
-    F: ForKernel<Args>,
-    Args: KernelArgs,
-{
+    _kernel: ForKernel<N>,
+) -> Result<(), DispatchError> {
     unimplemented!()
 }
 
-#[cfg(test)]
 mod tests {
+    use super::*;
+
     use crate::{
         routines::parameters::{ExecutionSpace, Schedule},
         view::{parameters::Layout, ViewOwned},
     };
-
-    use super::*;
 
     #[test]
     fn simple_range() {
@@ -268,10 +249,14 @@ mod tests {
             schedule: Schedule::default(),
         };
 
-        serial(execp, |[i]| {
-            mat[[i]] = 1.0;
-        })
-        .unwrap();
+        // very messy way to write a kernel but it should work for now
+        let kernel = Box::new(|arg: KernelArgs<1>| match arg {
+            KernelArgs::Index1D(i) => mat[[i]] = 1.0,
+            KernelArgs::IndexND(_) => unimplemented!(),
+            KernelArgs::Handle => unimplemented!(),
+        });
+
+        serial(execp, kernel).unwrap();
 
         assert_eq!(mat, ref_mat);
     }
@@ -287,10 +272,14 @@ mod tests {
             schedule: Schedule::default(),
         };
 
-        serial(execp, |[i, j]| {
-            mat[[i, j]] = 1.0;
-        })
-        .unwrap();
+        // very messy way to write a kernel but it should work for now
+        let kernel = Box::new(|arg: KernelArgs<2>| match arg {
+            KernelArgs::Index1D(_) => unimplemented!(),
+            KernelArgs::IndexND([i, j]) => mat[[i, j]] = 1.0,
+            KernelArgs::Handle => unimplemented!(),
+        });
+
+        serial(execp, kernel).unwrap();
 
         assert_eq!(mat, ref_mat);
     }
@@ -307,10 +296,14 @@ mod tests {
             schedule: Schedule::default(),
         };
 
-        serial(execp, |[i]| {
-            mat[[i]] = 1.0;
-        })
-        .unwrap();
+        // very messy way to write a kernel but it should work for now
+        let kernel = Box::new(|arg: KernelArgs<1>| match arg {
+            KernelArgs::Index1D(_) => unimplemented!(),
+            KernelArgs::IndexND(idx) => mat[idx] = 1.0,
+            KernelArgs::Handle => unimplemented!(),
+        });
+
+        serial(execp, kernel).unwrap();
 
         assert_eq!(mat, ref_mat);
     }
