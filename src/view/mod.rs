@@ -12,12 +12,11 @@ pub mod parameters;
 #[cfg(any(feature = "rayon", feature = "threads"))]
 use atomic::Atomic;
 
+#[cfg(not(any(feature = "rayon", feature = "threads")))]
+use std::ops::IndexMut;
+
 use self::parameters::{compute_stride, DataTraits, DataType, InnerDataType, Layout};
-use std::{
-    fmt::Debug,
-    ops::{Index, IndexMut},
-    sync::Arc,
-};
+use std::{fmt::Debug, ops::Index, sync::Arc};
 
 #[derive(Debug)]
 /// Enum used to classify view-related errors.
@@ -153,6 +152,8 @@ where
     #[cfg(any(feature = "rayon", feature = "threads"))]
     /// Thread-safe writing interface. Uses non-mutable indexing and
     /// immutability of atomic type methods.
+    ///
+    /// Uses [atomic::Ordering::Relaxed], may be subject to change.
     pub fn set(&self, index: [usize; N], val: T) {
         self[index].store(val, atomic::Ordering::Relaxed);
     }
@@ -186,14 +187,14 @@ where
     }
 
     #[cfg(not(any(feature = "rayon", feature = "threads")))]
-    /// Only defined when no feature are enabled since all interfaces should be immutable
-    /// otherwise.
-    ///
     /// Create a new View mirroring `self`, i.e. referencing the same data. This mirror
     /// uses a mutable reference, hence the serial-only definition
     ///
     /// Note that mirrors currently can only be created from the "original" view,
     /// i.e. the view owning the data.
+    ///
+    /// Only defined when no feature are enabled since all interfaces should be immutable
+    /// otherwise.
     pub fn create_mutable_mirror<'b>(&'a mut self) -> Result<ViewRW<'b, N, T>, ViewError>
     where
         'a: 'b, // 'a outlives 'b
