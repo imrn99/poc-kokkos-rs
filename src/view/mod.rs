@@ -16,6 +16,9 @@ use std::{
 };
 
 #[derive(Debug)]
+/// Enum used to classify view-related errors.
+///
+/// In all variants, the internal value is a description of the error.
 pub enum ViewError<'a> {
     ValueError(&'a str),
 }
@@ -129,17 +132,25 @@ where
             ))
         }
     }
-}
 
-impl<'a, const N: usize, T> Index<[usize; N]> for ViewBase<'a, N, T> {
-    type Output = T;
-
-    fn index(&self, index: [usize; N]) -> &Self::Output {
-        let flat_idx: usize = index
+    #[inline(always)]
+    pub fn flat_idx(&self, index: [usize; N]) -> usize {
+        index
             .iter()
             .zip(self.stride.iter())
             .map(|(i, s_i)| *i * *s_i)
-            .sum();
+            .sum()
+    }
+}
+
+impl<'a, const N: usize, T> Index<[usize; N]> for ViewBase<'a, N, T>
+where
+    T: Default + Clone,
+{
+    type Output = T;
+
+    fn index(&self, index: [usize; N]) -> &Self::Output {
+        let flat_idx: usize = self.flat_idx(index);
         match &self.data {
             DataType::Owned(v) => {
                 assert!(flat_idx < v.len()); // remove bounds check
@@ -157,13 +168,12 @@ impl<'a, const N: usize, T> Index<[usize; N]> for ViewBase<'a, N, T> {
     }
 }
 
-impl<'a, const N: usize, T> IndexMut<[usize; N]> for ViewBase<'a, N, T> {
+impl<'a, const N: usize, T> IndexMut<[usize; N]> for ViewBase<'a, N, T>
+where
+    T: Default + Clone,
+{
     fn index_mut(&mut self, index: [usize; N]) -> &mut Self::Output {
-        let flat_idx: usize = index
-            .iter()
-            .zip(self.stride.iter())
-            .map(|(i, s_i)| *i * *s_i)
-            .sum();
+        let flat_idx: usize = self.flat_idx(index);
         match &mut self.data {
             DataType::Owned(v) => {
                 assert!(flat_idx < v.len()); // remove bounds check
