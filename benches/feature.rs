@@ -24,7 +24,8 @@ fn f1(length: usize) {
 
     let kernel = Box::new(|arg: KernelArgs<1>| match arg {
         KernelArgs::Index1D(i) => {
-            black_box(v_y[[i]]);
+            v_y.set([i], 1.0);
+            black_box(&v_y[[i]]);
         }
         KernelArgs::IndexND(_) => unimplemented!(),
         KernelArgs::Handle => unimplemented!(),
