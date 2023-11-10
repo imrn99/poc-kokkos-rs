@@ -29,14 +29,26 @@ pub enum DataType<'a, T> {
     MutBorrowed(&'a mut [T]),
 }
 
-/// Equality by value or by data referenced ?
+/// Kokkos implements equality check by comparing the pointers, i.e.
+/// two views are "equal" if and only if their data field points to the
+/// same memory space.
 impl<'a, T: PartialEq> PartialEq for DataType<'a, T> {
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {
-            (Self::Owned(l0), Self::Owned(r0)) => l0 == r0,
-            (Self::Borrowed(l0), Self::Borrowed(r0)) => l0 == r0,
-            (Self::MutBorrowed(l0), Self::MutBorrowed(r0)) => l0 == r0,
-            _ => false,
+            // are the deref operations necessary?
+            // this one is technically necessary because self==self should return true
+            (Self::Owned(l0), Self::Owned(r0)) => (*l0).as_ptr() == (*r0).as_ptr(),
+            // compare pointers
+            // deref Owned only once, twice the others
+            (Self::Owned(l0), Self::Borrowed(r0)) => (*l0).as_ptr() == (**r0).as_ptr(),
+            (Self::Owned(l0), Self::MutBorrowed(r0)) => (*l0).as_ptr() == (**r0).as_ptr(),
+            (Self::Borrowed(l0), Self::Owned(r0)) => (**l0).as_ptr() == (*r0).as_ptr(),
+            (Self::MutBorrowed(l0), Self::Owned(r0)) => (**l0).as_ptr() == (*r0).as_ptr(),
+
+            (Self::Borrowed(l0), Self::Borrowed(r0)) => (**l0).as_ptr() == (**r0).as_ptr(),
+            (Self::Borrowed(l0), Self::MutBorrowed(r0)) => (**l0).as_ptr() == (**r0).as_ptr(),
+            (Self::MutBorrowed(l0), Self::MutBorrowed(r0)) => (**l0).as_ptr() == (**r0).as_ptr(),
+            (Self::MutBorrowed(l0), Self::Borrowed(r0)) => (**l0).as_ptr() == (**r0).as_ptr(),
         }
     }
 }
