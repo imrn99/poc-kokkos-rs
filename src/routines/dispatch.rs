@@ -274,7 +274,7 @@ mod tests {
 
         serial(execp, kernel).unwrap();
 
-        assert_eq!(mat, ref_mat);
+        assert_eq!(mat.raw_val().unwrap(), ref_mat.raw_val().unwrap());
     }
 
     #[test]
@@ -303,7 +303,7 @@ mod tests {
 
         serial(execp, kernel).unwrap();
 
-        assert_eq!(mat, ref_mat);
+        assert_eq!(mat.raw_val().unwrap(), ref_mat.raw_val().unwrap());
     }
 
     #[test]
@@ -332,7 +332,6 @@ mod tests {
         });
 
         serial(execp, kernel).unwrap();
-
-        assert_eq!(mat, ref_mat);
+        assert_eq!(mat.raw_val().unwrap(), ref_mat.raw_val().unwrap());
     }
 }

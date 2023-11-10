@@ -16,6 +16,11 @@ use std::{
 };
 
 #[derive(Debug)]
+pub enum ViewError<'a> {
+    ValueError(&'a str),
+}
+
+#[derive(Debug)]
 /// Common structure used as the backend of all `View` types. The main differences between
 /// usable types is the type of the `data` field.
 pub struct ViewBase<'a, const N: usize, T> {
@@ -112,6 +117,16 @@ where
             layout: self.layout,
             dim: self.dim,
             stride: self.stride,
+        }
+    }
+
+    pub fn raw_val<'b>(self) -> Result<Vec<T>, ViewError<'b>> {
+        if let DataType::Owned(v) = self.data {
+            Ok(v)
+        } else {
+            Err(ViewError::ValueError(
+                "Cannot fetch raw values of a non-data-owning views",
+            ))
         }
     }
 }
