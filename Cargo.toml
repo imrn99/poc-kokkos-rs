@@ -8,7 +8,7 @@ edition = "2021"
 [features]
 serial = []
 threads = []
-rayon = ["dep:rayon"]
+rayon = ["dep:rayon", "dep:atomic"]
 
 # DEPENDENCIES
 
@@ -16,7 +16,8 @@ rayon = ["dep:rayon"]
 cxx = "*"
 cfg-if = "*"
 rayon = {version = "*", optional=true}
-atomic = "0.6.0"
+atomic = {version = "0.5.3", optional=true}
+#bytemuck = {version = "*", optional=true}
 
 [dev-dependencies]
 criterion = { version = "*", features = ["html_reports"] }

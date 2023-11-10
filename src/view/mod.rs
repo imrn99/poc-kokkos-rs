@@ -9,8 +9,12 @@
 
 pub mod parameters;
 
-use self::parameters::{compute_stride, DataType, Layout};
+#[cfg(any(feature = "rayon", feature = "threads"))]
+use atomic::Atomic;
+
+use self::parameters::{compute_stride, DataTraits, DataType, InnerDataType, Layout};
 use std::{
+    fmt::Debug,
     ops::{Index, IndexMut},
     sync::Arc,
 };
@@ -27,7 +31,10 @@ pub enum ViewError<'a> {
 #[derive(Debug)]
 /// Common structure used as the backend of all `View` types. The main differences between
 /// usable types is the type of the `data` field.
-pub struct ViewBase<'a, const N: usize, T> {
+pub struct ViewBase<'a, const N: usize, T>
+where
+    T: DataTraits,
+{
     /// Data container. Depending on the type, it can be a vector (`Owned`), a reference
     /// (`ReadOnly`), a mutable reference (`ReadWrite`) or an `Arc<>` pointing on a vector
     /// (`Shared`).
@@ -49,7 +56,7 @@ pub struct ViewBase<'a, const N: usize, T> {
 // ~~~~~~~~ Constructors
 impl<'a, const N: usize, T> ViewBase<'a, N, T>
 where
-    T: Default + Clone, // fair assumption imo
+    T: DataTraits, // fair assumption imo
 {
     /// Constructor used to create owned (and shared?) views. See dedicated methods for
     /// others.
@@ -87,7 +94,52 @@ where
     }
 }
 
-impl<'a, const N: usize, T> ViewBase<'a, N, T> {
+#[cfg(any(feature = "rayon", feature = "threads"))]
+// ~~~~~~~~ Constructors
+impl<'a, const N: usize, T> ViewBase<'a, N, T>
+where
+    T: DataTraits, // fair assumption imo
+{
+    /// Constructor used to create owned (and shared?) views. See dedicated methods for
+    /// others.
+    pub fn new(layout: Layout<N>, dim: [usize; N]) -> Self {
+        // compute stride & capacity
+        let stride = compute_stride(&dim, &layout);
+        let capacity: usize = dim.iter().product();
+
+        // build & return
+        Self {
+            data: DataType::Owned((0..capacity).map(|_| Atomic::new(T::default())).collect()), // should this be allocated though?
+            layout,
+            dim,
+            stride,
+        }
+    }
+
+    /// Constructor used to create owned (and shared?) views. See dedicated methods for
+    /// others.
+    pub fn new_from_data(data: Vec<T>, layout: Layout<N>, dim: [usize; N]) -> Self {
+        // compute stride if necessary
+        let stride = compute_stride(&dim, &layout);
+
+        // checks
+        let capacity: usize = dim.iter().product();
+        assert_eq!(capacity, data.len());
+
+        // build & return
+        Self {
+            data: DataType::Owned(data.into_iter().map(|elem| Atomic::new(elem)).collect()),
+            layout,
+            dim,
+            stride,
+        }
+    }
+}
+
+impl<'a, const N: usize, T> ViewBase<'a, N, T>
+where
+    T: DataTraits,
+{
     // ~~~~~~~~ Uniform writing interface across all features
 
     #[inline(always)]
@@ -164,7 +216,7 @@ impl<'a, const N: usize, T> ViewBase<'a, N, T> {
 
     // ~~~~~~~~ Convenience
 
-    pub fn raw_val<'b>(self) -> Result<Vec<T>, ViewError<'b>> {
+    pub fn raw_val<'b>(self) -> Result<Vec<InnerDataType<T>>, ViewError<'b>> {
         if let DataType::Owned(v) = self.data {
             Ok(v)
         } else {
@@ -185,8 +237,11 @@ impl<'a, const N: usize, T> ViewBase<'a, N, T> {
 }
 
 /// Read-only access is always implemented.
-impl<'a, const N: usize, T> Index<[usize; N]> for ViewBase<'a, N, T> {
-    type Output = T;
+impl<'a, const N: usize, T> Index<[usize; N]> for ViewBase<'a, N, T>
+where
+    T: DataTraits,
+{
+    type Output = InnerDataType<T>;
 
     fn index(&self, index: [usize; N]) -> &Self::Output {
         let flat_idx: usize = self.flat_idx(index);
@@ -210,7 +265,10 @@ impl<'a, const N: usize, T> Index<[usize; N]> for ViewBase<'a, N, T> {
 #[cfg(not(any(feature = "rayon", feature = "threads")))]
 /// Read-write access is implemented using [IndexMut] trait when no parallel
 /// features are enabled.
-impl<'a, const N: usize, T> IndexMut<[usize; N]> for ViewBase<'a, N, T> {
+impl<'a, const N: usize, T> IndexMut<[usize; N]> for ViewBase<'a, N, T>
+where
+    T: DataTraits,
+{
     fn index_mut(&mut self, index: [usize; N]) -> &mut Self::Output {
         let flat_idx: usize = self.flat_idx(index);
         match &mut self.data {
@@ -227,7 +285,10 @@ impl<'a, const N: usize, T> IndexMut<[usize; N]> for ViewBase<'a, N, T> {
     }
 }
 
-impl<'a, const N: usize, T: PartialEq> PartialEq for ViewBase<'a, N, T> {
+impl<'a, const N: usize, T: PartialEq + Debug> PartialEq for ViewBase<'a, N, T>
+where
+    T: DataTraits,
+{
     fn eq(&self, other: &Self) -> bool {
         self.data == other.data
             && self.layout == other.layout
