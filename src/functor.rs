@@ -4,18 +4,10 @@
 //! is highly dependant on the features enabled since the traits that a
 //! kernel must satisfy changes totally depending on the backend used.
 
-/*
-pub trait KernelArgs {}
-impl KernelArgs for usize {}
-impl<const N: usize> KernelArgs for [usize; N] {}
-*/
-
 /// Kernel argument types
 ///
 /// Until some work is done to have a better solution[^sol1][^sol2], this will
-/// be an enum and kernels will be written in an idiomatic way. Another solution
-/// may be to keep this as a trait and use `Box<dyn Fn(Box<dyn KernelArgs>)>`
-/// as a Kernel type?
+/// be an enum and kernels will be written in an idiomatic way.
 ///
 /// [^sol1]: Current tracking issue for upcasting implementation: <https://github.com/rust-lang/rust/issues/65991>
 ///
@@ -34,6 +26,12 @@ pub enum KernelArgs<const N: usize> {
 ///
 /// Backend-specific type for `rayon`.
 pub type ForKernel<'a, const N: usize> = Box<dyn Fn(KernelArgs<N>) + Send + Sync + 'a>;
+
+#[cfg(feature = "threads")]
+/// Kernel type used by the parallel statements.
+///
+/// Backend-specific type for `std::thread`.
+pub type ForKernel<const N: usize> = Box<dyn FnOnce(KernelArgs<N>) + Send + 'static>;
 
 #[cfg(not(any(feature = "rayon", feature = "threads")))]
 /// Kernel type used by the parallel statements.
