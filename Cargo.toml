@@ -16,6 +16,7 @@ rayon = ["dep:rayon"]
 cxx = "*"
 cfg-if = "*"
 rayon = {version = "*", optional=true}
+atomic = "0.6.0"
 
 [dev-dependencies]
 criterion = { version = "*", features = ["html_reports"] }

@@ -44,6 +44,8 @@ pub struct ViewBase<'a, const N: usize, T> {
     pub stride: [usize; N],
 }
 
+#[cfg(not(any(feature = "rayon", feature = "threads")))]
+// ~~~~~~~~ Constructors
 impl<'a, const N: usize, T> ViewBase<'a, N, T>
 where
     T: Default + Clone, // fair assumption imo
@@ -122,6 +124,27 @@ where
             stride: self.stride,
         }
     }
+}
+
+impl<'a, const N: usize, T> ViewBase<'a, N, T> {
+    // ~~~~~~~~ Uniform writing interface across all features
+
+    #[inline(always)]
+    #[cfg(not(any(feature = "rayon", feature = "threads")))]
+    /// Serial writing interface. Uses mutable indexing implementation.
+    pub fn set(&mut self, index: [usize; N], val: T) {
+        self[index] = val;
+    }
+
+    #[inline(always)]
+    #[cfg(any(feature = "rayon", feature = "threads"))]
+    /// Thread-safe writing interface. Uses non-mutable indexing and
+    /// immutability of atomic type methods.
+    pub fn set(&self, index: [usize; N], val: T) {
+        self[index].store(val, atomic::Ordering::Relaxed);
+    }
+
+    // ~~~~~~~~ Convenience
 
     pub fn raw_val<'b>(self) -> Result<Vec<T>, ViewError<'b>> {
         if let DataType::Owned(v) = self.data {
@@ -143,10 +166,8 @@ where
     }
 }
 
-impl<'a, const N: usize, T> Index<[usize; N]> for ViewBase<'a, N, T>
-where
-    T: Default + Clone,
-{
+/// Read-only access is always implemented.
+impl<'a, const N: usize, T> Index<[usize; N]> for ViewBase<'a, N, T> {
     type Output = T;
 
     fn index(&self, index: [usize; N]) -> &Self::Output {
@@ -168,10 +189,10 @@ where
     }
 }
 
-impl<'a, const N: usize, T> IndexMut<[usize; N]> for ViewBase<'a, N, T>
-where
-    T: Default + Clone,
-{
+#[cfg(not(any(feature = "rayon", feature = "threads")))]
+/// Read-write access is implemented using [IndexMut] trait when no parallel
+/// features are enabled.
+impl<'a, const N: usize, T> IndexMut<[usize; N]> for ViewBase<'a, N, T> {
     fn index_mut(&mut self, index: [usize; N]) -> &mut Self::Output {
         let flat_idx: usize = self.flat_idx(index);
         match &mut self.data {

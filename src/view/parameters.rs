@@ -13,8 +13,17 @@
 //! - Memory traits?
 //!
 
+#[cfg(any(feature = "rayon", feature = "threads"))]
+use atomic::Atomic;
+
 /// Maximum possible depth (i.e. number of dimensions) for a view.
 pub const MAX_VIEW_DEPTH: usize = 8;
+
+#[cfg(not(any(feature = "rayon", feature = "threads")))]
+pub type InnerDataType<T> = T;
+
+#[cfg(any(feature = "rayon", feature = "threads"))]
+pub type InnerDataType<T> = Atomic<T>;
 
 #[derive(Debug)]
 /// Enum used to identify the type of data the view is holding. See variants for more
@@ -22,11 +31,11 @@ pub const MAX_VIEW_DEPTH: usize = 8;
 /// [`equal` algorithm](https://kokkos.github.io/kokkos-core-wiki/API/algorithms/std-algorithms/all/StdEqual.html).
 pub enum DataType<'a, T> {
     /// The view owns the data.
-    Owned(Vec<T>),
+    Owned(Vec<InnerDataType<T>>),
     /// The view borrows the data and can only read it.
-    Borrowed(&'a [T]),
+    Borrowed(&'a [InnerDataType<T>]),
     /// The view borrows the data and can both read and modify it.
-    MutBorrowed(&'a mut [T]),
+    MutBorrowed(&'a mut [InnerDataType<T>]),
 }
 
 /// Kokkos implements equality check by comparing the pointers, i.e.
