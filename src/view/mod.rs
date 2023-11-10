@@ -21,6 +21,7 @@ use std::{
 /// In all variants, the internal value is a description of the error.
 pub enum ViewError<'a> {
     ValueError(&'a str),
+    DoubleMirroring(&'a str),
 }
 
 #[derive(Debug)]
@@ -84,46 +85,6 @@ where
             stride,
         }
     }
-
-    pub fn create_mirror<'b>(&'a self) -> ViewRO<'b, N, T>
-    where
-        'a: 'b, // 'a outlives 'b
-    {
-        let inner: &[T] = match &self.data {
-            DataType::Owned(v) => &v[..],
-            DataType::Borrowed(slice) => slice,
-            DataType::MutBorrowed(mut_slice) => mut_slice, // is this allowed ?
-        };
-        let data = DataType::Borrowed(inner);
-
-        Self {
-            data,
-            layout: self.layout,
-            dim: self.dim,
-            stride: self.stride,
-        }
-    }
-
-    pub fn create_mutable_mirror<'b>(&'a mut self) -> ViewRW<'b, N, T>
-    where
-        'a: 'b, // 'a outlives 'b
-    {
-        let inner: &mut [T] = match &mut self.data {
-            DataType::Owned(v) => &mut v[..],
-            DataType::Borrowed(_) => {
-                unimplemented!("Cannot create a mutable mirror from a read-only view!")
-            }
-            DataType::MutBorrowed(mut_slice) => mut_slice, // is this allowed ?
-        };
-        let data = DataType::Borrowed(inner);
-
-        Self {
-            data,
-            layout: self.layout,
-            dim: self.dim,
-            stride: self.stride,
-        }
-    }
 }
 
 impl<'a, const N: usize, T> ViewBase<'a, N, T> {
@@ -142,6 +103,63 @@ impl<'a, const N: usize, T> ViewBase<'a, N, T> {
     /// immutability of atomic type methods.
     pub fn set(&self, index: [usize; N], val: T) {
         self[index].store(val, atomic::Ordering::Relaxed);
+    }
+
+    // ~~~~~~~~ Mirrors
+
+    /// Create a new View mirroring `self`, i.e. referencing the same data. This mirror
+    /// is always immutable, but it inner values might still be writable if they are
+    /// atomic types.
+    ///
+    /// Note that mirrors currently can only be created from the "original" view,
+    /// i.e. the view owning the data.
+    pub fn create_mirror<'b>(&'a self) -> Result<ViewRO<'b, N, T>, ViewError>
+    where
+        'a: 'b, // 'a outlives 'b
+    {
+        let inner = if let DataType::Owned(v) = &self.data {
+            v
+        } else {
+            return Err(ViewError::DoubleMirroring(
+                "Cannot create a mirror from a non-data-owning View",
+            ));
+        };
+
+        Ok(Self {
+            data: DataType::Borrowed(inner),
+            layout: self.layout,
+            dim: self.dim,
+            stride: self.stride,
+        })
+    }
+
+    #[cfg(not(any(feature = "rayon", feature = "threads")))]
+    /// Only defined when no feature are enabled since all interfaces should be immutable
+    /// otherwise.
+    ///
+    /// Create a new View mirroring `self`, i.e. referencing the same data. This mirror
+    /// uses a mutable reference, hence the serial-only definition
+    ///
+    /// Note that mirrors currently can only be created from the "original" view,
+    /// i.e. the view owning the data.
+    pub fn create_mutable_mirror<'b>(&'a mut self) -> Result<ViewRW<'b, N, T>, ViewError>
+    where
+        'a: 'b, // 'a outlives 'b
+    {
+        let inner = if let DataType::Owned(v) = &mut self.data {
+            v
+        } else {
+            return Err(ViewError::DoubleMirroring(
+                "Cannot create a mirror from a non-data-owning View",
+            ));
+        };
+
+        Ok(Self {
+            data: DataType::MutBorrowed(inner),
+            layout: self.layout,
+            dim: self.dim,
+            stride: self.stride,
+        })
     }
 
     // ~~~~~~~~ Convenience
