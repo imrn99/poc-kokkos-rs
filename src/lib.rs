@@ -11,7 +11,7 @@
 //!
 //! Additionally, some features of Kokkos are not reproducible in Rust (GPU targetting,
 //! templating); These create limits for the implementation, hence the existence of this PoC.
-//!
+//! This makes limit-testing an fundamental part of the project.
 //!
 //!
 //! ## Quickstart

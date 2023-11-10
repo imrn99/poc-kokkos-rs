@@ -9,12 +9,16 @@ proof and verification of that statement.
 
 ## Scope of the Project
 
-The main focus of this Proof-of-Concept is the architecture and approach used by
+~~The main focus of this Proof-of-Concept is the architecture and approach used by
 Kokkos for data management. While multiple targets support (Serial, [rayon][2], OpenMP)
-could be interesting, it is not the priority. 
+could be interesting, it is not the priority.~~
+
+Rudimentary data structure implementation being done, the goal is now to write a simple
+program using a `parallel_for` statement with satisfying portability as defined by Kokkos.
 
 Additionally, some features of Kokkos are not reproducible in Rust (GPU targetting, 
 templating); These create limits for the implementation that may or may not be bypassed.
+This makes limit-testing an fundamental part of the project.
 
 
 ## Quickstart
@@ -47,6 +51,7 @@ cargo doc --open --no-deps
 
 - `ndarray` Rust implementation: [link][NDARRAY]
 - Const generics documentation from The Rust Reference: [link][CONSTG]
+- `move` keyword semantic & implementation: [link][MOVE]
 
 
 ### Functor Implementation
@@ -61,3 +66,4 @@ cargo doc --open --no-deps
 [NDARRAY]: https://docs.rs/ndarray/latest/ndarray/
 [CONSTG]: https://doc.rust-lang.org/reference/items/generics.html
 [FNIMPL]: https://github.com/rust-lang/rust/issues/29625#issuecomment-1692602873
+[MOVE]: https://stackoverflow.com/questions/30288782/what-are-move-semantics-in-rust
