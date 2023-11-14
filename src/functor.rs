@@ -21,20 +21,18 @@ pub enum KernelArgs<const N: usize> {
     Handle,
 }
 
-#[cfg(feature = "rayon")]
-/// Kernel type used by the parallel statements.
-///
-/// Backend-specific type for `rayon`.
-pub type ForKernel<'a, const N: usize> = Box<dyn Fn(KernelArgs<N>) + Send + Sync + 'a>;
+cfg_if::cfg_if! {
+    if #[cfg(feature = "rayon")] {
+        /// `rayon`-specific kernel type.
+        pub type ForKernelType<'a, const N: usize> = Box<dyn Fn(KernelArgs<N>) + Send + Sync + 'a>;
+    } else if #[cfg(feature = "threads")] {
+        /// Standard threads specific kernel type.
+        pub type ForKernelType<const N: usize> = Box<dyn Fn(KernelArgs<N>) + Send + 'static>;
+    } else {
+        /// Fall back kernel type.
+        pub type ForKernelType<'a, const N: usize> = SerialForKernelType<'a, N>;
+    }
+}
 
-#[cfg(feature = "threads")]
-/// Kernel type used by the parallel statements.
-///
-/// Backend-specific type for `std::thread`.
-pub type ForKernel<const N: usize> = Box<dyn FnOnce(KernelArgs<N>) + Send + 'static>;
-
-#[cfg(not(any(feature = "rayon", feature = "threads")))]
-/// Kernel type used by the parallel statements.
-///
-/// Backend-specific type for serial execution.
-pub type ForKernel<'a, const N: usize> = Box<dyn FnMut(KernelArgs<N>) + 'a>;
+/// Serial kernel type.
+pub type SerialForKernelType<'a, const N: usize> = Box<dyn FnMut(KernelArgs<N>) + Send + Sync + 'a>;

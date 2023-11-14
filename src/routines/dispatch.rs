@@ -10,7 +10,7 @@ use rayon::prelude::*;
 use std::{fmt::Display, ops::Range};
 
 use super::parameters::{ExecutionPolicy, RangePolicy};
-use crate::functor::{ForKernel, KernelArgs};
+use crate::functor::{ForKernelType, KernelArgs};
 
 // enums
 
@@ -51,12 +51,12 @@ impl std::error::Error for DispatchError {
 /// Builds a N-depth nested loop executing a kernel using the N resulting indices.
 /// Technically, this should be replaced by a tiling function, for both serial and parallel
 /// implementations. In practice, the cost of tiling might be too high in a serial context.
-fn recursive_loop<const N: usize>(ranges: &[Range<usize>; N], mut kernel: ForKernel<N>) {
+fn recursive_loop<const N: usize>(ranges: &[Range<usize>; N], mut kernel: ForKernelType<N>) {
     // handles recursions
     fn inner<const N: usize>(
         current_depth: usize,
         ranges: &[Range<usize>; N],
-        kernel: &mut ForKernel<N>,
+        kernel: &mut ForKernelType<N>,
         indices: &mut [usize; N],
     ) {
         if current_depth == N {
@@ -85,7 +85,7 @@ fn recursive_loop<const N: usize>(ranges: &[Range<usize>; N], mut kernel: ForKer
 /// This also serve as the fallback CPU dispatch routine in specific cases.
 pub fn serial<const N: usize>(
     execp: ExecutionPolicy<N>,
-    kernel: ForKernel<N>,
+    kernel: ForKernelType<N>,
 ) -> Result<(), DispatchError> {
     match execp.range {
         RangePolicy::RangePolicy(range) => {
@@ -163,7 +163,7 @@ where
 /// Backend-specific function for [rayon](https://docs.rs/rayon/latest/rayon/) usage.
 pub fn cpu<const N: usize>(
     execp: ExecutionPolicy<N>,
-    kernel: ForKernel<N>,
+    kernel: ForKernelType<N>,
 ) -> Result<(), DispatchError> {
     match execp.range {
         RangePolicy::RangePolicy(range) => {
@@ -233,7 +233,7 @@ pub fn cpu<const N: usize>(
 /// Backend-specific function that falls back to serial execution.
 pub fn cpu<const N: usize>(
     execp: ExecutionPolicy<N>,
-    kernel: ForKernel<N>,
+    kernel: ForKernelType<N>,
 ) -> Result<(), DispatchError> {
     serial(execp, kernel)
 }
@@ -241,7 +241,7 @@ pub fn cpu<const N: usize>(
 /// Dispatch routine for GPU parallelization. UNIMPLEMENTED
 pub fn gpu<const N: usize>(
     _execp: ExecutionPolicy<N>,
-    _kernel: ForKernel<N>,
+    _kernel: ForKernelType<N>,
 ) -> Result<(), DispatchError> {
     unimplemented!()
 }

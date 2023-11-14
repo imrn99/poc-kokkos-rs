@@ -12,7 +12,7 @@ pub mod parameters;
 
 use std::fmt::Display;
 
-use crate::functor::ForKernel;
+use crate::functor::ForKernelType;
 
 use self::{
     dispatch::DispatchError,
@@ -70,7 +70,7 @@ impl std::error::Error for StatementError {
 /// (`0` being the most outer level, `2` the most inner level).
 pub fn parallel_for<const DEPTH: u8, const N: usize>(
     execp: ExecutionPolicy<N>,
-    func: ForKernel<N>,
+    func: ForKernelType<N>,
 ) -> Result<(), StatementError> {
     // checks...
     // hierarchy check
