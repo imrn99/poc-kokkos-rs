@@ -146,96 +146,97 @@ pub fn serial<const N: usize>(
     Ok(())
 }
 
-#[cfg(feature = "threads")]
-/// Dispatch routine for CPU parallelization.
-///
-/// Backend-specific function for [std::thread] usage.
-pub fn cpu<const N: usize, F>(execp: ExecutionPolicy<N>, kernel: F) -> Result<(), DispatchError>
-where
-    F: FnMut([usize; N]) + Sync + Send,
-{
-    todo!()
-}
+cfg_if::cfg_if! {
+    if #[cfg(feature = "threads")] {
+        /// Dispatch routine for CPU parallelization.
+        ///
+        /// Backend-specific function for [std::thread] usage.
+        pub fn cpu<const N: usize, F>(execp: ExecutionPolicy<N>, kernel: F) -> Result<(), DispatchError>
+        where
+            F: FnMut([usize; N]) + Sync + Send,
+        {
+            todo!()
+        }
+    } else if #[cfg(feature = "rayon")] {
+        /// Dispatch routine for CPU parallelization.
+        ///
+        /// Backend-specific function for [rayon](https://docs.rs/rayon/latest/rayon/) usage.
+        pub fn cpu<const N: usize>(
+            execp: ExecutionPolicy<N>,
+            kernel: ForKernelType<N>,
+        ) -> Result<(), DispatchError> {
+            match execp.range {
+                RangePolicy::RangePolicy(range) => {
+                    // serial, 1D range
+                    if N != 1 {
+                        return Err(DispatchError::Serial(
+                            "Dispatch uses N>1 for a 1D RangePolicy",
+                        ));
+                    }
+                    // making indices N-sized arrays is necessary, even with the assertion...
+                    range
+                        .into_par_iter()
+                        .map(KernelArgs::Index1D)
+                        .for_each(kernel)
+                }
+                RangePolicy::MDRangePolicy(_) => {
+                    // Kokkos does tiling to handle a MDRanges
+                    unimplemented!()
+                }
+                RangePolicy::TeamPolicy {
+                    league_size: _, // number of teams; akin to # of work items/batches
+                    team_size: _,   // number of threads per team; ignored in serial dispatch
+                    vector_size: _, // possible third dim parallelism; ignored in serial dispatch?
+                } => {
+                    // interpret # of teams as # of work items (chunks);
+                    // necessary because serial dispatch is the fallback implementation
+                    // we ignore team size & vector size? since there's no parallelism here
 
-#[cfg(feature = "rayon")]
-/// Dispatch routine for CPU parallelization.
-///
-/// Backend-specific function for [rayon](https://docs.rs/rayon/latest/rayon/) usage.
-pub fn cpu<const N: usize>(
-    execp: ExecutionPolicy<N>,
-    kernel: ForKernelType<N>,
-) -> Result<(), DispatchError> {
-    match execp.range {
-        RangePolicy::RangePolicy(range) => {
-            // serial, 1D range
-            if N != 1 {
-                return Err(DispatchError::Serial(
-                    "Dispatch uses N>1 for a 1D RangePolicy",
-                ));
-            }
-            // making indices N-sized arrays is necessary, even with the assertion...
-            range
-                .into_par_iter()
-                .map(KernelArgs::Index1D)
-                .for_each(kernel)
-        }
-        RangePolicy::MDRangePolicy(_) => {
-            // Kokkos does tiling to handle a MDRanges
-            unimplemented!()
-        }
-        RangePolicy::TeamPolicy {
-            league_size: _, // number of teams; akin to # of work items/batches
-            team_size: _,   // number of threads per team; ignored in serial dispatch
-            vector_size: _, // possible third dim parallelism; ignored in serial dispatch?
-        } => {
-            // interpret # of teams as # of work items (chunks);
-            // necessary because serial dispatch is the fallback implementation
-            // we ignore team size & vector size? since there's no parallelism here
+                    // is it even possible to use chunks? It would require either:
+                    //  - awareness of used external data
+                    //  - owning the used data; maybe in the TeamPolicy struct
+                    // 2nd option is the more plausible but it creates issues when accessing
+                    // multiple views for example; It also seems incompatible with the paradigm
 
-            // is it even possible to use chunks? It would require either:
-            //  - awareness of used external data
-            //  - owning the used data; maybe in the TeamPolicy struct
-            // 2nd option is the more plausible but it creates issues when accessing
-            // multiple views for example; It also seems incompatible with the paradigm
-
-            // -> build a team handle & let the user write its kernel using it
-            todo!()
+                    // -> build a team handle & let the user write its kernel using it
+                    todo!()
+                }
+                RangePolicy::PerTeam => {
+                    // used inside a team dispatch
+                    // executes the kernel once per team
+                    todo!()
+                }
+                RangePolicy::PerThread => {
+                    // used inside a team dispatch
+                    // executes the kernel once per threads of the team
+                    todo!()
+                }
+                RangePolicy::TeamThreadRange => {
+                    // same as RangePolicy but inside a team
+                    todo!()
+                }
+                RangePolicy::TeamThreadMDRange => {
+                    // same as MDRangePolicy but inside a team
+                    todo!()
+                }
+                RangePolicy::TeamVectorRange => todo!(),
+                RangePolicy::TeamVectorMDRange => todo!(),
+                RangePolicy::ThreadVectorRange => todo!(),
+                RangePolicy::ThreadVectorMDRange => todo!(),
+            };
+            Ok(())
         }
-        RangePolicy::PerTeam => {
-            // used inside a team dispatch
-            // executes the kernel once per team
-            todo!()
+    } else {
+        /// Dispatch routine for CPU parallelization.
+        ///
+        /// Backend-specific function that falls back to serial execution.
+        pub fn cpu<const N: usize>(
+            execp: ExecutionPolicy<N>,
+            kernel: ForKernelType<N>,
+        ) -> Result<(), DispatchError> {
+            serial(execp, kernel)
         }
-        RangePolicy::PerThread => {
-            // used inside a team dispatch
-            // executes the kernel once per threads of the team
-            todo!()
-        }
-        RangePolicy::TeamThreadRange => {
-            // same as RangePolicy but inside a team
-            todo!()
-        }
-        RangePolicy::TeamThreadMDRange => {
-            // same as MDRangePolicy but inside a team
-            todo!()
-        }
-        RangePolicy::TeamVectorRange => todo!(),
-        RangePolicy::TeamVectorMDRange => todo!(),
-        RangePolicy::ThreadVectorRange => todo!(),
-        RangePolicy::ThreadVectorMDRange => todo!(),
-    };
-    Ok(())
-}
-
-#[cfg(not(any(feature = "rayon", feature = "threads")))]
-/// Dispatch routine for CPU parallelization.
-///
-/// Backend-specific function that falls back to serial execution.
-pub fn cpu<const N: usize>(
-    execp: ExecutionPolicy<N>,
-    kernel: ForKernelType<N>,
-) -> Result<(), DispatchError> {
-    serial(execp, kernel)
+    }
 }
 
 /// Dispatch routine for GPU parallelization. UNIMPLEMENTED
@@ -247,7 +248,6 @@ pub fn gpu<const N: usize>(
 }
 
 mod tests {
-
     #[test]
     fn simple_range() {
         use super::*;
