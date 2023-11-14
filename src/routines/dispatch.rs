@@ -151,11 +151,62 @@ cfg_if::cfg_if! {
         /// Dispatch routine for CPU parallelization.
         ///
         /// Backend-specific function for [std::thread] usage.
-        pub fn cpu<const N: usize, F>(execp: ExecutionPolicy<N>, kernel: F) -> Result<(), DispatchError>
-        where
-            F: FnMut([usize; N]) + Sync + Send,
-        {
-            todo!()
+        pub fn cpu<const N: usize>(
+            execp: ExecutionPolicy<N>,
+            kernel: ForKernelType<N>,
+        ) -> Result<(), DispatchError> {
+            match execp.range {
+                RangePolicy::RangePolicy(range) => {
+                    // serial, 1D range
+                    if N != 1 {
+                        return Err(DispatchError::Serial(
+                            "Dispatch uses N>1 for a 1D RangePolicy",
+                        ));
+                    }
+                    // compute chunk_size so that there is 1 chunk per thread
+                    let chunk_size = range.len() / num_cpus::get() + 1;
+                    // making indices N-sized arrays is necessary, even with the assertion...
+                    let indices = range.collect::<Vec<usize>>();
+                    for chunk in indices.chunks(chunk_size) {
+                        let _ = std::thread::spawn(|| chunk.iter().map(|idx_ref| KernelArgs::Index1D(*idx_ref)).for_each(kernel));
+
+                    }
+                }
+                RangePolicy::MDRangePolicy(_) => {
+                    // Kokkos does tiling to handle a MDRanges
+                    unimplemented!()
+                }
+                RangePolicy::TeamPolicy {
+                    league_size: _, // number of teams; akin to # of work items/batches
+                    team_size: _,   // number of threads per team; ignored in serial dispatch
+                    vector_size: _, // possible third dim parallelism; ignored in serial dispatch?
+                } => {
+                    // interpret # of teams as # of work items (chunks);
+                    // necessary because serial dispatch is the fallback implementation
+                    // we ignore team size & vector size? since there's no parallelism here
+
+                    // is it even possible to use chunks? It would require either:
+                    //  - awareness of used external data
+                    //  - owning the used data; maybe in the TeamPolicy struct
+                    // 2nd option is the more plausible but it creates issues when accessing
+                    // multiple views for example; It also seems incompatible with the paradigm
+
+                    // -> build a team handle & let the user write its kernel using it
+                    todo!()
+                }
+                RangePolicy::PerTeam => {
+                    // used inside a team dispatch
+                    // executes the kernel once per team
+                    todo!()
+                }
+                RangePolicy::PerThread => {
+                    // used inside a team dispatch
+                    // executes the kernel once per threads of the team
+                    todo!()
+                }
+                _ => todo!(),
+            };
+            Ok(())
         }
     } else if #[cfg(feature = "rayon")] {
         /// Dispatch routine for CPU parallelization.
@@ -211,18 +262,7 @@ cfg_if::cfg_if! {
                     // executes the kernel once per threads of the team
                     todo!()
                 }
-                RangePolicy::TeamThreadRange => {
-                    // same as RangePolicy but inside a team
-                    todo!()
-                }
-                RangePolicy::TeamThreadMDRange => {
-                    // same as MDRangePolicy but inside a team
-                    todo!()
-                }
-                RangePolicy::TeamVectorRange => todo!(),
-                RangePolicy::TeamVectorMDRange => todo!(),
-                RangePolicy::ThreadVectorRange => todo!(),
-                RangePolicy::ThreadVectorMDRange => todo!(),
+                _ => todo!(),
             };
             Ok(())
         }
