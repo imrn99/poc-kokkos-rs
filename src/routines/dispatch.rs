@@ -164,14 +164,12 @@ cfg_if::cfg_if! {
                         ));
                     }
                     // compute chunk_size so that there is 1 chunk per thread
-                    let n_items = range.len();
-                    let chunk_size = n_items / num_cpus::get() + 1;
+                    let chunk_size = range.len() / num_cpus::get() + 1;
                     let indices = range.collect::<Vec<usize>>();
-
+                    // use scope to avoid 'static lifetime reqs
                     std::thread::scope(|s| {
                         let handles: Vec<_> = indices.chunks(chunk_size).map(|chunk| {
                             // rebuild the kernel from the copied raw pointer
-                            //let loc_kernel: ForKernelType<N> = unsafe { Box::from_raw(kernel_ptr) };
                             s.spawn(|| chunk.iter().map(|idx_ref| KernelArgs::Index1D(*idx_ref)).for_each(kernel))
                         }).collect();
 
@@ -294,6 +292,9 @@ pub fn gpu<const N: usize>(
 ) -> Result<(), DispatchError> {
     unimplemented!()
 }
+
+// ~~~~~~
+// Tests
 
 mod tests {
     #[test]

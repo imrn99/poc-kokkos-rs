@@ -35,4 +35,4 @@ cfg_if::cfg_if! {
 }
 
 /// Serial kernel type.
-pub type SerialForKernelType<'a, const N: usize> = Box<dyn FnMut(KernelArgs<N>) + Send + Sync + 'a>;
+pub type SerialForKernelType<'a, const N: usize> = Box<dyn FnMut(KernelArgs<N>) + 'a>;

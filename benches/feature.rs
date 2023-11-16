@@ -14,8 +14,7 @@ use poc_kokkos_rs::{
 
 // 1D regular for init & populating
 fn f1(length: usize) {
-    let mut v_y: ViewOwned<'static, 1, _> =
-        ViewOwned::new_from_data(vec![0.0; length], Layout::Right, [length]);
+    let mut v_y = ViewOwned::new_from_data(vec![0.0; length], Layout::Right, [length]);
     black_box(&mut v_y); // prevents the first init to be optimized away
     let execp = ExecutionPolicy {
         space: ExecutionSpace::DeviceCPU,
