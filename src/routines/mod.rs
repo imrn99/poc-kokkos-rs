@@ -12,7 +12,7 @@ pub mod parameters;
 
 use std::fmt::Display;
 
-use crate::functor::ForKernelType;
+use crate::functor::KernelArgs;
 
 use self::{
     dispatch::DispatchError,
@@ -70,7 +70,7 @@ impl std::error::Error for StatementError {
 /// (`0` being the most outer level, `2` the most inner level).
 pub fn parallel_for<const DEPTH: u8, const N: usize>(
     execp: ExecutionPolicy<N>,
-    func: ForKernelType<N>,
+    func: impl Fn(KernelArgs<N>) + Send + Sync + Clone,
 ) -> Result<(), StatementError> {
     // checks...
     // hierarchy check
@@ -94,12 +94,13 @@ pub fn parallel_for<const DEPTH: u8, const N: usize>(
     assert_eq!(d, DEPTH);
 
     // data prep?
+    let kernel = Box::new(func);
 
     // dispatch
     let res = match execp.space {
-        parameters::ExecutionSpace::Serial => dispatch::serial(execp, func),
-        parameters::ExecutionSpace::DeviceCPU => dispatch::cpu(execp, func),
-        parameters::ExecutionSpace::DeviceGPU => dispatch::gpu(execp, func),
+        parameters::ExecutionSpace::Serial => dispatch::serial(execp, kernel),
+        parameters::ExecutionSpace::DeviceCPU => dispatch::cpu(execp, kernel),
+        parameters::ExecutionSpace::DeviceGPU => dispatch::gpu(execp, kernel),
     };
 
     // Ok or converts error

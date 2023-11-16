@@ -10,7 +10,7 @@ use rayon::prelude::*;
 use std::{fmt::Display, ops::Range};
 
 use super::parameters::{ExecutionPolicy, RangePolicy};
-use crate::functor::{ForKernelType, KernelArgs};
+use crate::functor::KernelArgs;
 
 // enums
 
@@ -51,12 +51,15 @@ impl std::error::Error for DispatchError {
 /// Builds a N-depth nested loop executing a kernel using the N resulting indices.
 /// Technically, this should be replaced by a tiling function, for both serial and parallel
 /// implementations. In practice, the cost of tiling might be too high in a serial context.
-fn recursive_loop<const N: usize>(ranges: &[Range<usize>; N], mut kernel: ForKernelType<N>) {
+fn recursive_loop<const N: usize>(
+    ranges: &[Range<usize>; N],
+    mut kernel: Box<impl FnMut(KernelArgs<N>)>,
+) {
     // handles recursions
     fn inner<const N: usize>(
         current_depth: usize,
         ranges: &[Range<usize>; N],
-        kernel: &mut ForKernelType<N>,
+        kernel: &mut Box<impl FnMut(KernelArgs<N>)>,
         indices: &mut [usize; N],
     ) {
         if current_depth == N {
@@ -85,7 +88,7 @@ fn recursive_loop<const N: usize>(ranges: &[Range<usize>; N], mut kernel: ForKer
 /// This also serve as the fallback CPU dispatch routine in specific cases.
 pub fn serial<const N: usize>(
     execp: ExecutionPolicy<N>,
-    kernel: ForKernelType<N>,
+    kernel: Box<impl FnMut(KernelArgs<N>)>,
 ) -> Result<(), DispatchError> {
     match execp.range {
         RangePolicy::RangePolicy(range) => {
@@ -151,9 +154,9 @@ cfg_if::cfg_if! {
         /// Dispatch routine for CPU parallelization.
         ///
         /// Backend-specific function for [std::thread] usage.
-        pub fn cpu<const N: usize>(
+        pub fn cpu<'a, const N: usize>(
             execp: ExecutionPolicy<N>,
-            kernel: ForKernelType<N>,
+            kernel: Box<impl Fn(KernelArgs<N>) + Send + Sync + 'a + Clone>,
         ) -> Result<(), DispatchError> {
             match execp.range {
                 RangePolicy::RangePolicy(range) => {
@@ -170,7 +173,7 @@ cfg_if::cfg_if! {
                     std::thread::scope(|s| {
                         let handles: Vec<_> = indices.chunks(chunk_size).map(|chunk| {
                             // rebuild the kernel from the copied raw pointer
-                            s.spawn(|| chunk.iter().map(|idx_ref| KernelArgs::Index1D(*idx_ref)).for_each(kernel))
+                            s.spawn(|| chunk.iter().map(|idx_ref| KernelArgs::Index1D(*idx_ref)).for_each(kernel.clone()))
                         }).collect();
 
                         for handle in handles {
@@ -218,9 +221,9 @@ cfg_if::cfg_if! {
         /// Dispatch routine for CPU parallelization.
         ///
         /// Backend-specific function for [rayon](https://docs.rs/rayon/latest/rayon/) usage.
-        pub fn cpu<const N: usize>(
+        pub fn cpu<'a, const N: usize>(
             execp: ExecutionPolicy<N>,
-            kernel: ForKernelType<N>,
+            kernel: Box<impl Fn(KernelArgs<N>) + Send + Sync + 'a + Clone>,
         ) -> Result<(), DispatchError> {
             match execp.range {
                 RangePolicy::RangePolicy(range) => {
@@ -278,7 +281,7 @@ cfg_if::cfg_if! {
         /// Backend-specific function that falls back to serial execution.
         pub fn cpu<const N: usize>(
             execp: ExecutionPolicy<N>,
-            kernel: ForKernelType<N>,
+            kernel: Box<impl FnMut(KernelArgs<N>)>,
         ) -> Result<(), DispatchError> {
             serial(execp, kernel)
         }
@@ -286,9 +289,9 @@ cfg_if::cfg_if! {
 }
 
 /// Dispatch routine for GPU parallelization. UNIMPLEMENTED
-pub fn gpu<const N: usize>(
+pub fn gpu<'a, const N: usize>(
     _execp: ExecutionPolicy<N>,
-    _kernel: ForKernelType<N>,
+    _kernel: Box<impl Fn(KernelArgs<N>) + Send + Sync + 'a>,
 ) -> Result<(), DispatchError> {
     unimplemented!()
 }

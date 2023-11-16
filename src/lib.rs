@@ -71,6 +71,8 @@
 //! [1]: https://kokkos.github.io/kokkos-core-wiki/index.html
 //! [2]: https://docs.rs/rayon/latest/rayon/
 
+//#![feature(type_alias_impl_trait)]
+
 #[cxx::bridge(namespace = "")]
 /// C++ inter-op code
 pub mod ffi {

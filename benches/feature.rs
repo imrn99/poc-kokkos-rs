@@ -22,14 +22,14 @@ fn f1(length: usize) {
         schedule: Schedule::Static,
     };
 
-    let kernel = Box::new(|arg: KernelArgs<1>| match arg {
+    let kernel = |arg: KernelArgs<1>| match arg {
         KernelArgs::Index1D(i) => {
             v_y.set([i], 1.0);
             black_box(&v_y[[i]]);
         }
         KernelArgs::IndexND(_) => unimplemented!(),
         KernelArgs::Handle => unimplemented!(),
-    });
+    };
     parallel_for::<0, 1>(execp, kernel).unwrap();
     black_box(&v_y);
 }
