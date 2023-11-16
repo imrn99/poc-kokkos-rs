@@ -164,13 +164,23 @@ cfg_if::cfg_if! {
                         ));
                     }
                     // compute chunk_size so that there is 1 chunk per thread
-                    let chunk_size = range.len() / num_cpus::get() + 1;
-                    // making indices N-sized arrays is necessary, even with the assertion...
-                    let indices = range.collect::<Vec<usize>>();
-                    for chunk in indices.chunks(chunk_size) {
-                        let _ = std::thread::spawn(|| chunk.iter().map(|idx_ref| KernelArgs::Index1D(*idx_ref)).for_each(kernel));
+                    let n_items = range.len();
+                    let chunk_size = n_items / num_cpus::get() + 1;
+                    // leak indices so that they continue to exist during all threads execution
+                    let indices = range.collect::<Vec<usize>>().leak();
+                    let handles: Vec<_> = indices.chunks(chunk_size).map(|chunk: &'static [usize]| {
+                        std::thread::spawn(|| chunk.iter().map(|idx_ref| KernelArgs::Index1D(*idx_ref)).for_each(kernel))
+                    }).collect();
 
+                    for handle in handles {
+                        handle.join().unwrap();
                     }
+
+                    // This does one of two things:
+                    // - prevent the memory leak due to indices being dropped
+                    // - something else that may or may not be dangerous
+                    let layout = std::alloc::Layout::array::<usize>(n_items).expect("surely nothing bad will happen");
+                    unsafe {std::alloc::dealloc(indices.as_ptr() as *mut u8, layout)};
                 }
                 RangePolicy::MDRangePolicy(_) => {
                     // Kokkos does tiling to handle a MDRanges
