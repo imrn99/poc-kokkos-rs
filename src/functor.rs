@@ -27,7 +27,7 @@ cfg_if::cfg_if! {
         pub type ForKernelType<'a, const N: usize> = Box<dyn Fn(KernelArgs<N>) + Send + Sync + 'a>;
     } else if #[cfg(feature = "threads")] {
         /// Standard threads specific kernel type.
-        pub type ForKernelType<const N: usize> = Box<dyn Fn(KernelArgs<N>) + Send + 'static>;
+        pub type ForKernelType<'a, const N: usize> = Box<dyn Fn(KernelArgs<N>) + Send + 'a>;
     } else {
         /// Fall back kernel type.
         pub type ForKernelType<'a, const N: usize> = SerialForKernelType<'a, N>;

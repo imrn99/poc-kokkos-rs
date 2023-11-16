@@ -166,25 +166,19 @@ cfg_if::cfg_if! {
                     // compute chunk_size so that there is 1 chunk per thread
                     let n_items = range.len();
                     let chunk_size = n_items / num_cpus::get() + 1;
-                    // leak indices so that they continue to exist during all threads execution
-                    let indices = range.collect::<Vec<usize>>().leak();
-                    // dispatch the kernel through raw pointers copies
-                    let kernel_ptr = Box::into_raw(kernel);
-                    let handles: Vec<_> = indices.chunks(chunk_size).map(|chunk: &'static [usize]| {
-                        // rebuild the kernel from the copied raw pointer
-                        let loc_kernel: ForKernelType<N> = unsafe { Box::from_raw(kernel_ptr) };
-                        std::thread::spawn(|| chunk.iter().map(|idx_ref| KernelArgs::Index1D(*idx_ref)).for_each(loc_kernel))
-                    }).collect();
+                    let indices = range.collect::<Vec<usize>>();
 
-                    for handle in handles {
-                        handle.join().unwrap();
-                    }
+                    std::thread::scope(|s| {
+                        let handles: Vec<_> = indices.chunks(chunk_size).map(|chunk| {
+                            // rebuild the kernel from the copied raw pointer
+                            //let loc_kernel: ForKernelType<N> = unsafe { Box::from_raw(kernel_ptr) };
+                            s.spawn(|| chunk.iter().map(|idx_ref| KernelArgs::Index1D(*idx_ref)).for_each(kernel))
+                        }).collect();
 
-                    // This does one of two things:
-                    // - prevent the memory leak due to indices being dropped
-                    // - something else that may or may not be dangerous
-                    let layout = std::alloc::Layout::array::<usize>(n_items).expect("surely nothing bad will happen");
-                    unsafe {std::alloc::dealloc(indices.as_ptr() as *mut u8, layout)};
+                        for handle in handles {
+                            handle.join().unwrap();
+                        }
+                    });
                 }
                 RangePolicy::MDRangePolicy(_) => {
                     // Kokkos does tiling to handle a MDRanges
