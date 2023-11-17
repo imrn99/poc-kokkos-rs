@@ -45,6 +45,4 @@ harness = false
 name = "mdrange_populate"
 harness = false
 
-[[bench]]
-name = "feature"
-harness = false
+
