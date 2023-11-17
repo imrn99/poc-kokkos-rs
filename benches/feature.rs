@@ -30,7 +30,7 @@ fn f1(length: usize) {
         KernelArgs::IndexND(_) => unimplemented!(),
         KernelArgs::Handle => unimplemented!(),
     };
-    parallel_for::<0, 1>(execp, kernel).unwrap();
+    parallel_for(execp, kernel).unwrap();
     black_box(&v_y);
 }
 

@@ -14,10 +14,7 @@ use std::fmt::Display;
 
 use crate::functor::KernelArgs;
 
-use self::{
-    dispatch::DispatchError,
-    parameters::{ExecutionPolicy, RangePolicy},
-};
+use self::{dispatch::DispatchError, parameters::ExecutionPolicy};
 
 // Enums
 
@@ -68,30 +65,11 @@ impl std::error::Error for StatementError {
 /// Parallel For statement. The `const` generic argument should
 /// be `0`, `1`, or `2` according to its position in a nested structure
 /// (`0` being the most outer level, `2` the most inner level).
-pub fn parallel_for<const DEPTH: u8, const N: usize>(
+pub fn parallel_for<const N: usize>(
     execp: ExecutionPolicy<N>,
     func: impl FnMut(KernelArgs<N>) + Send + Sync + Clone,
 ) -> Result<(), StatementError> {
     // checks...
-    // hierarchy check
-    let d: u8 = match execp.range {
-        RangePolicy::RangePolicy(_) => 0,
-        RangePolicy::MDRangePolicy(_) => 0,
-        RangePolicy::TeamPolicy {
-            league_size: _,
-            team_size: _,
-            vector_size: _,
-        } => 0,
-        RangePolicy::PerTeam => 1,
-        RangePolicy::PerThread => 1,
-        RangePolicy::TeamThreadRange => 1,
-        RangePolicy::TeamThreadMDRange => 1,
-        RangePolicy::TeamVectorRange => 1,
-        RangePolicy::TeamVectorMDRange => 1,
-        RangePolicy::ThreadVectorRange => 2,
-        RangePolicy::ThreadVectorMDRange => 2,
-    };
-    assert_eq!(d, DEPTH);
 
     // data prep?
     let kernel = Box::new(func);
