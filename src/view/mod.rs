@@ -158,6 +158,23 @@ where
         self[index].store(val, atomic::Ordering::Relaxed);
     }
 
+    #[inline(always)]
+    #[cfg(not(any(feature = "rayon", feature = "threads", feature = "gpu")))]
+    /// Serial writing interface. Uses mutable indexing implementation.
+    pub fn get(&self, index: [usize; N]) -> T {
+        self[index]
+    }
+
+    #[inline(always)]
+    #[cfg(any(feature = "rayon", feature = "threads", feature = "gpu"))]
+    /// Thread-safe writing interface. Uses non-mutable indexing and
+    /// immutability of atomic type methods.
+    ///
+    /// Uses [atomic::Ordering::Relaxed], may be subject to change.
+    pub fn get(&self, index: [usize; N]) -> T {
+        self[index].load(atomic::Ordering::Relaxed)
+    }
+
     // ~~~~~~~~ Mirrors
 
     /// Create a new View mirroring `self`, i.e. referencing the same data. This mirror

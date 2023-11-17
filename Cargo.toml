@@ -45,4 +45,8 @@ harness = false
 name = "mdrange_populate"
 harness = false
 
+[[bench]]
+name = "axpy"
+harness = false
+
 
