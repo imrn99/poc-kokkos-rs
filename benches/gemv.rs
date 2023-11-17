@@ -13,11 +13,7 @@ use rand::{
     SeedableRng,
 };
 
-// this bench is used to assess whether the parallel_for routines
-// switches backend accordingly to feature. It should be executed
-// multiple time by the user, each time with a different feature
-
-// Serial AXPY
+// Serial GEMV
 fn f1(aa_init: Vec<f64>, x_init: Vec<f64>, y_init: Vec<f64>, alpha: f64, beta: f64) {
     let length = x_init.len();
     let mut aa = ViewOwned::new_from_data(aa_init, Layout::Right, [length, length]);
@@ -33,6 +29,7 @@ fn f1(aa_init: Vec<f64>, x_init: Vec<f64>, y_init: Vec<f64>, alpha: f64, beta: f
         schedule: Schedule::Static,
     };
 
+    // y = alpha * A * x + beta * y
     let gemv_kernel = |arg: KernelArgs<1>| match arg {
         KernelArgs::Index1D(i) => {
             let ax_i: f64 = (0..length).map(|j| aa.get([i, j]) * x.get([j])).sum();
@@ -46,7 +43,7 @@ fn f1(aa_init: Vec<f64>, x_init: Vec<f64>, y_init: Vec<f64>, alpha: f64, beta: f
     black_box(&y);
 }
 
-// DeviceCPU AXPY
+// DeviceCPU GEMV
 fn f2(aa_init: Vec<f64>, x_init: Vec<f64>, y_init: Vec<f64>, alpha: f64, beta: f64) {
     let length = x_init.len();
     let mut aa = ViewOwned::new_from_data(aa_init, Layout::Right, [length, length]);
@@ -62,6 +59,7 @@ fn f2(aa_init: Vec<f64>, x_init: Vec<f64>, y_init: Vec<f64>, alpha: f64, beta: f
         schedule: Schedule::Static,
     };
 
+    // y = alpha * A * x + beta * y
     let gemv_kernel = |arg: KernelArgs<1>| match arg {
         KernelArgs::Index1D(i) => {
             let ax_i: f64 = (0..length).map(|j| aa.get([i, j]) * x.get([j])).sum();

@@ -13,10 +13,6 @@ use rand::{
     SeedableRng,
 };
 
-// this bench is used to assess whether the parallel_for routines
-// switches backend accordingly to feature. It should be executed
-// multiple time by the user, each time with a different feature
-
 // Serial AXPY
 fn f1(x_init: Vec<f64>, y_init: Vec<f64>, alpha: f64) {
     let length = x_init.len();
@@ -31,6 +27,7 @@ fn f1(x_init: Vec<f64>, y_init: Vec<f64>, alpha: f64) {
         schedule: Schedule::Static,
     };
 
+    // y = alpha * x + y
     let axpy_kernel = |arg: KernelArgs<1>| match arg {
         KernelArgs::Index1D(i) => {
             let val = alpha * x.get([i]) + y.get([i]);
