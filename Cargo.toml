@@ -42,9 +42,9 @@ name = "view_access"
 harness = false
 
 [[bench]]
-name = "mdrange_populate"
+name = "axpy"
 harness = false
 
 [[bench]]
-name = "feature"
+name = "gemv"
 harness = false
