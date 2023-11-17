@@ -42,10 +42,6 @@ name = "view_access"
 harness = false
 
 [[bench]]
-name = "mdrange_populate"
-harness = false
-
-[[bench]]
 name = "axpy"
 harness = false
 
