@@ -288,12 +288,24 @@ cfg_if::cfg_if! {
     }
 }
 
-/// Dispatch routine for GPU parallelization. UNIMPLEMENTED
-pub fn gpu<'a, const N: usize>(
-    _execp: ExecutionPolicy<N>,
-    _kernel: Box<impl Fn(KernelArgs<N>) + Send + Sync + 'a>,
-) -> Result<(), DispatchError> {
-    unimplemented!()
+cfg_if::cfg_if! {
+    if #[cfg(feature = "gpu")] {
+        /// Dispatch routine for GPU parallelization. UNIMPLEMENTED
+        pub fn gpu<'a, const N: usize>(
+            execp: ExecutionPolicy<N>,
+            kernel: Box<impl Fn(KernelArgs<N>) + Send + Sync + 'a + Clone>,
+        ) -> Result<(), DispatchError> {
+            serial(execp, kernel)
+        }
+    } else {
+        /// Dispatch routine for GPU parallelization. UNIMPLEMENTED
+        pub fn gpu< const N: usize>(
+            execp: ExecutionPolicy<N>,
+            kernel: Box<impl FnMut(KernelArgs<N>)>,
+        ) -> Result<(), DispatchError> {
+            serial(execp, kernel)
+        }
+    }
 }
 
 // ~~~~~~

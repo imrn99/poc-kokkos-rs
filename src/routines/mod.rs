@@ -70,7 +70,7 @@ impl std::error::Error for StatementError {
 /// (`0` being the most outer level, `2` the most inner level).
 pub fn parallel_for<const DEPTH: u8, const N: usize>(
     execp: ExecutionPolicy<N>,
-    func: impl Fn(KernelArgs<N>) + Send + Sync + Clone,
+    func: impl FnMut(KernelArgs<N>) + Send + Sync + Clone,
 ) -> Result<(), StatementError> {
     // checks...
     // hierarchy check

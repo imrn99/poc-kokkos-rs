@@ -9,6 +9,7 @@ edition = "2021"
 serial = []
 threads = ["dep:num_cpus", "dep:atomic"]
 rayon = ["dep:rayon", "dep:atomic", "dep:num_cpus"]
+gpu = []
 
 # DEPENDENCIES
 
