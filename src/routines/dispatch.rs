@@ -324,14 +324,14 @@ mod tests {
         let ref_mat = ViewOwned::new_from_data(vec![1.0; 15], Layout::Right, [15]);
         let rangep = RangePolicy::RangePolicy(0..15);
         let execp = ExecutionPolicy {
-            space: ExecutionSpace::default(),
+            space: ExecutionSpace::DeviceCPU,
             range: rangep,
             schedule: Schedule::default(),
         };
 
         // very messy way to write a kernel but it should work for now
         let kernel = Box::new(|arg: KernelArgs<1>| match arg {
-            KernelArgs::Index1D(i) => mat[[i]] = 1.0,
+            KernelArgs::Index1D(i) => mat.set([i], 1.0),
             KernelArgs::IndexND(_) => unimplemented!(),
             KernelArgs::Handle => unimplemented!(),
         });
@@ -353,7 +353,7 @@ mod tests {
         let ref_mat = ViewOwned::new_from_data(vec![1.0; 150], Layout::Right, [10, 15]);
         let rangep = RangePolicy::MDRangePolicy([0..10, 0..15]);
         let execp = ExecutionPolicy {
-            space: ExecutionSpace::default(),
+            space: ExecutionSpace::DeviceCPU,
             range: rangep,
             schedule: Schedule::default(),
         };
@@ -361,7 +361,7 @@ mod tests {
         // very messy way to write a kernel but it should work for now
         let kernel = Box::new(|arg: KernelArgs<2>| match arg {
             KernelArgs::Index1D(_) => unimplemented!(),
-            KernelArgs::IndexND([i, j]) => mat[[i, j]] = 1.0,
+            KernelArgs::IndexND([i, j]) => mat.set([i, j], 1.0),
             KernelArgs::Handle => unimplemented!(),
         });
 
@@ -383,7 +383,7 @@ mod tests {
         #[allow(clippy::single_range_in_vec_init)]
         let rangep = RangePolicy::MDRangePolicy([0..15]);
         let execp = ExecutionPolicy {
-            space: ExecutionSpace::default(),
+            space: ExecutionSpace::DeviceCPU,
             range: rangep,
             schedule: Schedule::default(),
         };
@@ -391,7 +391,7 @@ mod tests {
         // very messy way to write a kernel but it should work for now
         let kernel = Box::new(|arg: KernelArgs<1>| match arg {
             KernelArgs::Index1D(_) => unimplemented!(),
-            KernelArgs::IndexND(idx) => mat[idx] = 1.0,
+            KernelArgs::IndexND(idx) => mat.set(idx, 1.0),
             KernelArgs::Handle => unimplemented!(),
         });
 

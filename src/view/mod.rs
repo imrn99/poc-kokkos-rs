@@ -234,9 +234,23 @@ where
 
     // ~~~~~~~~ Convenience
 
+    #[cfg(not(any(feature = "rayon", feature = "threads", feature = "gpu")))]
     pub fn raw_val<'b>(self) -> Result<Vec<InnerDataType<T>>, ViewError<'b>> {
         if let DataType::Owned(v) = self.data {
             Ok(v)
+        } else {
+            Err(ViewError::ValueError(
+                "Cannot fetch raw values of a non-data-owning views",
+            ))
+        }
+    }
+
+    #[cfg(any(feature = "rayon", feature = "threads", feature = "gpu"))]
+    pub fn raw_val<'b>(self) -> Result<Vec<T>, ViewError<'b>> {
+        if let DataType::Owned(v) = self.data {
+            Ok(v.iter()
+                .map(|elem| elem.load(atomic::Ordering::Relaxed))
+                .collect::<Vec<T>>())
         } else {
             Err(ViewError::ValueError(
                 "Cannot fetch raw values of a non-data-owning views",
