@@ -57,7 +57,26 @@
 //! - `hello_world_omp`: ...
 //!
 //!
+//! ## Features
+//!
+//! Using `features`, the crate can be compiled to use different backend for execution of parallel section.
+//! These can also be enabled in benchmarks.
+//!
+//! ```bash
+//! cargo build --features <FEATURE>
+//! ```
+//!
+//! Available features:
+//!
+//! - `rayon`: Uses the [rayon][2] crate to handle parallelization on CPU.
+//! - `threads` : Uses [`std::thread`] methods to handle parallelization on CPU.
+//! - `gpu`: Currently used as a way to gate GPU usage as this cannot be done in pure Rust.
+//!
 //! ## Compilation
+//!
+//! The build script will read the `CXX` environment variable to choose which C++ compiler to use
+//! for Rust/C++ interop. Note that the crate itself does not currently use C++ code, only examples
+//! do.
 //!
 //! ### Known issues
 //!
