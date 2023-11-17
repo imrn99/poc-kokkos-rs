@@ -49,4 +49,6 @@ harness = false
 name = "axpy"
 harness = false
 
-
+[[bench]]
+name = "gemv"
+harness = false
