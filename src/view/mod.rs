@@ -9,10 +9,10 @@
 
 pub mod parameters;
 
-#[cfg(any(feature = "rayon", feature = "threads"))]
+#[cfg(any(feature = "rayon", feature = "threads", feature = "gpu"))]
 use atomic::Atomic;
 
-#[cfg(not(any(feature = "rayon", feature = "threads")))]
+#[cfg(not(any(feature = "rayon", feature = "threads", feature = "gpu")))]
 use std::ops::IndexMut;
 
 use self::parameters::{compute_stride, DataTraits, DataType, InnerDataType, Layout};
@@ -51,7 +51,7 @@ where
     pub stride: [usize; N],
 }
 
-#[cfg(not(any(feature = "rayon", feature = "threads")))]
+#[cfg(not(any(feature = "rayon", feature = "threads", feature = "gpu")))]
 // ~~~~~~~~ Constructors
 impl<'a, const N: usize, T> ViewBase<'a, N, T>
 where
@@ -93,7 +93,7 @@ where
     }
 }
 
-#[cfg(any(feature = "rayon", feature = "threads"))]
+#[cfg(any(feature = "rayon", feature = "threads", feature = "gpu"))]
 // ~~~~~~~~ Constructors
 impl<'a, const N: usize, T> ViewBase<'a, N, T>
 where
@@ -142,14 +142,14 @@ where
     // ~~~~~~~~ Uniform writing interface across all features
 
     #[inline(always)]
-    #[cfg(not(any(feature = "rayon", feature = "threads")))]
+    #[cfg(not(any(feature = "rayon", feature = "threads", feature = "gpu")))]
     /// Serial writing interface. Uses mutable indexing implementation.
     pub fn set(&mut self, index: [usize; N], val: T) {
         self[index] = val;
     }
 
     #[inline(always)]
-    #[cfg(any(feature = "rayon", feature = "threads"))]
+    #[cfg(any(feature = "rayon", feature = "threads", feature = "gpu"))]
     /// Thread-safe writing interface. Uses non-mutable indexing and
     /// immutability of atomic type methods.
     ///
@@ -186,7 +186,7 @@ where
         })
     }
 
-    #[cfg(not(any(feature = "rayon", feature = "threads")))]
+    #[cfg(not(any(feature = "rayon", feature = "threads", feature = "gpu")))]
     /// Create a new View mirroring `self`, i.e. referencing the same data. This mirror
     /// uses a mutable reference, hence the serial-only definition
     ///
@@ -263,7 +263,7 @@ where
     }
 }
 
-#[cfg(not(any(feature = "rayon", feature = "threads")))]
+#[cfg(not(any(feature = "rayon", feature = "threads", feature = "gpu")))]
 /// Read-write access is implemented using [IndexMut] trait when no parallel
 /// features are enabled.
 impl<'a, const N: usize, T> IndexMut<[usize; N]> for ViewBase<'a, N, T>

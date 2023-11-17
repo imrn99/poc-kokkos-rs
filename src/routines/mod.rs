@@ -62,25 +62,55 @@ impl std::error::Error for StatementError {
 
 // Statements
 
-/// Parallel For statement. The `const` generic argument should
-/// be `0`, `1`, or `2` according to its position in a nested structure
-/// (`0` being the most outer level, `2` the most inner level).
-pub fn parallel_for<const N: usize>(
-    execp: ExecutionPolicy<N>,
-    func: impl FnMut(KernelArgs<N>) + Send + Sync + Clone,
-) -> Result<(), StatementError> {
-    // checks...
+// All of this would be half as long if impl trait in type aliases was stabilized
 
-    // data prep?
-    let kernel = Box::new(func);
+cfg_if::cfg_if! {
+    if #[cfg(any(feature = "rayon", feature = "threads", feature = "gpu"))] {
 
-    // dispatch
-    let res = match execp.space {
-        parameters::ExecutionSpace::Serial => dispatch::serial(execp, kernel),
-        parameters::ExecutionSpace::DeviceCPU => dispatch::cpu(execp, kernel),
-        parameters::ExecutionSpace::DeviceGPU => dispatch::gpu(execp, kernel),
-    };
+        /// Parallel For statement. The `const` generic argument should
+        /// be `0`, `1`, or `2` according to its position in a nested structure
+        /// (`0` being the most outer level, `2` the most inner level).
+        pub fn parallel_for<const N: usize>(
+            execp: ExecutionPolicy<N>,
+            func: impl Fn(KernelArgs<N>) + Send + Sync + Clone,
+        ) -> Result<(), StatementError> {
+            // checks...
 
-    // Ok or converts error
-    res.map_err(|e| e.into())
+            // data prep?
+            let kernel = Box::new(func);
+
+            // dispatch
+            let res = match execp.space {
+                parameters::ExecutionSpace::Serial => dispatch::serial(execp, kernel),
+                parameters::ExecutionSpace::DeviceCPU => dispatch::cpu(execp, kernel),
+                parameters::ExecutionSpace::DeviceGPU => dispatch::gpu(execp, kernel),
+            };
+
+            // Ok or converts error
+            res.map_err(|e| e.into())
+        }
+    } else {
+        /// Parallel For statement. The `const` generic argument should
+        /// be `0`, `1`, or `2` according to its position in a nested structure
+        /// (`0` being the most outer level, `2` the most inner level).
+        pub fn parallel_for<const N: usize>(
+            execp: ExecutionPolicy<N>,
+            func: impl FnMut(KernelArgs<N>),
+        ) -> Result<(), StatementError> {
+            // checks...
+
+            // data prep?
+            let kernel = Box::new(func);
+
+            // dispatch
+            let res = match execp.space {
+                parameters::ExecutionSpace::Serial => dispatch::serial(execp, kernel),
+                parameters::ExecutionSpace::DeviceCPU => dispatch::cpu(execp, kernel),
+                parameters::ExecutionSpace::DeviceGPU => dispatch::gpu(execp, kernel),
+            };
+
+            // Ok or converts error
+            res.map_err(|e| e.into())
+        }
+    }
 }

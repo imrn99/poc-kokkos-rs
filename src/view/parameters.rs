@@ -16,7 +16,7 @@
 
 use std::fmt::Debug;
 
-#[cfg(any(feature = "rayon", feature = "threads"))]
+#[cfg(any(feature = "rayon", feature = "threads", feature = "gpu"))]
 use atomic::Atomic;
 
 /// Maximum possible depth (i.e. number of dimensions) for a view.
@@ -27,10 +27,10 @@ pub trait DataTraits: Debug + Clone + Copy + Default {}
 impl DataTraits for f64 {}
 impl DataTraits for f32 {}
 
-#[cfg(not(any(feature = "rayon", feature = "threads")))]
+#[cfg(not(any(feature = "rayon", feature = "threads", feature = "gpu")))]
 pub type InnerDataType<T> = T;
 
-#[cfg(any(feature = "rayon", feature = "threads"))]
+#[cfg(any(feature = "rayon", feature = "threads", feature = "gpu"))]
 pub type InnerDataType<T> = Atomic<T>;
 
 #[derive(Debug)]
