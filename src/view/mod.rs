@@ -9,16 +9,31 @@
 
 pub mod parameters;
 
-use self::parameters::{compute_stride, DataType, Layout};
-use std::{
-    ops::{Index, IndexMut},
-    sync::Arc,
-};
+#[cfg(any(feature = "rayon", feature = "threads", feature = "gpu"))]
+use atomic::Atomic;
+
+#[cfg(not(any(feature = "rayon", feature = "threads", feature = "gpu")))]
+use std::ops::IndexMut;
+
+use self::parameters::{compute_stride, DataTraits, DataType, InnerDataType, Layout};
+use std::{fmt::Debug, ops::Index, sync::Arc};
+
+#[derive(Debug)]
+/// Enum used to classify view-related errors.
+///
+/// In all variants, the internal value is a description of the error.
+pub enum ViewError<'a> {
+    ValueError(&'a str),
+    DoubleMirroring(&'a str),
+}
 
 #[derive(Debug)]
 /// Common structure used as the backend of all `View` types. The main differences between
 /// usable types is the type of the `data` field.
-pub struct ViewBase<'a, const N: usize, T> {
+pub struct ViewBase<'a, const N: usize, T>
+where
+    T: DataTraits,
+{
     /// Data container. Depending on the type, it can be a vector (`Owned`), a reference
     /// (`ReadOnly`), a mutable reference (`ReadWrite`) or an `Arc<>` pointing on a vector
     /// (`Shared`).
@@ -36,9 +51,11 @@ pub struct ViewBase<'a, const N: usize, T> {
     pub stride: [usize; N],
 }
 
+#[cfg(not(any(feature = "rayon", feature = "threads", feature = "gpu")))]
+// ~~~~~~~~ Constructors
 impl<'a, const N: usize, T> ViewBase<'a, N, T>
 where
-    T: Default + Clone, // fair assumption imo
+    T: DataTraits, // fair assumption imo
 {
     /// Constructor used to create owned (and shared?) views. See dedicated methods for
     /// others.
@@ -74,57 +91,161 @@ where
             stride,
         }
     }
+}
 
-    pub fn create_mirror<'b>(&'a self) -> ViewRO<'b, N, T>
-    where
-        'a: 'b, // 'a outlives 'b
-    {
-        let inner: &[T] = match &self.data {
-            DataType::Owned(v) => &v[..],
-            DataType::Borrowed(slice) => slice,
-            DataType::MutBorrowed(mut_slice) => mut_slice, // is this allowed ?
-        };
-        let data = DataType::Borrowed(inner);
+#[cfg(any(feature = "rayon", feature = "threads", feature = "gpu"))]
+// ~~~~~~~~ Constructors
+impl<'a, const N: usize, T> ViewBase<'a, N, T>
+where
+    T: DataTraits, // fair assumption imo
+{
+    /// Constructor used to create owned (and shared?) views. See dedicated methods for
+    /// others.
+    pub fn new(layout: Layout<N>, dim: [usize; N]) -> Self {
+        // compute stride & capacity
+        let stride = compute_stride(&dim, &layout);
+        let capacity: usize = dim.iter().product();
 
+        // build & return
         Self {
-            data,
-            layout: self.layout,
-            dim: self.dim,
-            stride: self.stride,
+            data: DataType::Owned((0..capacity).map(|_| Atomic::new(T::default())).collect()), // should this be allocated though?
+            layout,
+            dim,
+            stride,
         }
     }
 
-    pub fn create_mutable_mirror<'b>(&'a mut self) -> ViewRW<'b, N, T>
-    where
-        'a: 'b, // 'a outlives 'b
-    {
-        let inner: &mut [T] = match &mut self.data {
-            DataType::Owned(v) => &mut v[..],
-            DataType::Borrowed(_) => {
-                unimplemented!("Cannot create a mutable mirror from a read-only view!")
-            }
-            DataType::MutBorrowed(mut_slice) => mut_slice, // is this allowed ?
-        };
-        let data = DataType::Borrowed(inner);
+    /// Constructor used to create owned (and shared?) views. See dedicated methods for
+    /// others.
+    pub fn new_from_data(data: Vec<T>, layout: Layout<N>, dim: [usize; N]) -> Self {
+        // compute stride if necessary
+        let stride = compute_stride(&dim, &layout);
 
+        // checks
+        let capacity: usize = dim.iter().product();
+        assert_eq!(capacity, data.len());
+
+        // build & return
         Self {
-            data,
-            layout: self.layout,
-            dim: self.dim,
-            stride: self.stride,
+            data: DataType::Owned(data.into_iter().map(|elem| Atomic::new(elem)).collect()),
+            layout,
+            dim,
+            stride,
         }
     }
 }
 
-impl<'a, const N: usize, T> Index<[usize; N]> for ViewBase<'a, N, T> {
-    type Output = T;
+impl<'a, const N: usize, T> ViewBase<'a, N, T>
+where
+    T: DataTraits,
+{
+    // ~~~~~~~~ Uniform writing interface across all features
 
-    fn index(&self, index: [usize; N]) -> &Self::Output {
-        let flat_idx: usize = index
+    #[inline(always)]
+    #[cfg(not(any(feature = "rayon", feature = "threads", feature = "gpu")))]
+    /// Serial writing interface. Uses mutable indexing implementation.
+    pub fn set(&mut self, index: [usize; N], val: T) {
+        self[index] = val;
+    }
+
+    #[inline(always)]
+    #[cfg(any(feature = "rayon", feature = "threads", feature = "gpu"))]
+    /// Thread-safe writing interface. Uses non-mutable indexing and
+    /// immutability of atomic type methods.
+    ///
+    /// Uses [atomic::Ordering::Relaxed], may be subject to change.
+    pub fn set(&self, index: [usize; N], val: T) {
+        self[index].store(val, atomic::Ordering::Relaxed);
+    }
+
+    // ~~~~~~~~ Mirrors
+
+    /// Create a new View mirroring `self`, i.e. referencing the same data. This mirror
+    /// is always immutable, but it inner values might still be writable if they are
+    /// atomic types.
+    ///
+    /// Note that mirrors currently can only be created from the "original" view,
+    /// i.e. the view owning the data.
+    pub fn create_mirror<'b>(&'a self) -> Result<ViewRO<'b, N, T>, ViewError>
+    where
+        'a: 'b, // 'a outlives 'b
+    {
+        let inner = if let DataType::Owned(v) = &self.data {
+            v
+        } else {
+            return Err(ViewError::DoubleMirroring(
+                "Cannot create a mirror from a non-data-owning View",
+            ));
+        };
+
+        Ok(Self {
+            data: DataType::Borrowed(inner),
+            layout: self.layout,
+            dim: self.dim,
+            stride: self.stride,
+        })
+    }
+
+    #[cfg(not(any(feature = "rayon", feature = "threads", feature = "gpu")))]
+    /// Create a new View mirroring `self`, i.e. referencing the same data. This mirror
+    /// uses a mutable reference, hence the serial-only definition
+    ///
+    /// Note that mirrors currently can only be created from the "original" view,
+    /// i.e. the view owning the data.
+    ///
+    /// Only defined when no feature are enabled since all interfaces should be immutable
+    /// otherwise.
+    pub fn create_mutable_mirror<'b>(&'a mut self) -> Result<ViewRW<'b, N, T>, ViewError>
+    where
+        'a: 'b, // 'a outlives 'b
+    {
+        let inner = if let DataType::Owned(v) = &mut self.data {
+            v
+        } else {
+            return Err(ViewError::DoubleMirroring(
+                "Cannot create a mirror from a non-data-owning View",
+            ));
+        };
+
+        Ok(Self {
+            data: DataType::MutBorrowed(inner),
+            layout: self.layout,
+            dim: self.dim,
+            stride: self.stride,
+        })
+    }
+
+    // ~~~~~~~~ Convenience
+
+    pub fn raw_val<'b>(self) -> Result<Vec<InnerDataType<T>>, ViewError<'b>> {
+        if let DataType::Owned(v) = self.data {
+            Ok(v)
+        } else {
+            Err(ViewError::ValueError(
+                "Cannot fetch raw values of a non-data-owning views",
+            ))
+        }
+    }
+
+    #[inline(always)]
+    pub fn flat_idx(&self, index: [usize; N]) -> usize {
+        index
             .iter()
             .zip(self.stride.iter())
             .map(|(i, s_i)| *i * *s_i)
-            .sum();
+            .sum()
+    }
+}
+
+/// Read-only access is always implemented.
+impl<'a, const N: usize, T> Index<[usize; N]> for ViewBase<'a, N, T>
+where
+    T: DataTraits,
+{
+    type Output = InnerDataType<T>;
+
+    fn index(&self, index: [usize; N]) -> &Self::Output {
+        let flat_idx: usize = self.flat_idx(index);
         match &self.data {
             DataType::Owned(v) => {
                 assert!(flat_idx < v.len()); // remove bounds check
@@ -142,13 +263,15 @@ impl<'a, const N: usize, T> Index<[usize; N]> for ViewBase<'a, N, T> {
     }
 }
 
-impl<'a, const N: usize, T> IndexMut<[usize; N]> for ViewBase<'a, N, T> {
+#[cfg(not(any(feature = "rayon", feature = "threads", feature = "gpu")))]
+/// Read-write access is implemented using [IndexMut] trait when no parallel
+/// features are enabled.
+impl<'a, const N: usize, T> IndexMut<[usize; N]> for ViewBase<'a, N, T>
+where
+    T: DataTraits,
+{
     fn index_mut(&mut self, index: [usize; N]) -> &mut Self::Output {
-        let flat_idx: usize = index
-            .iter()
-            .zip(self.stride.iter())
-            .map(|(i, s_i)| *i * *s_i)
-            .sum();
+        let flat_idx: usize = self.flat_idx(index);
         match &mut self.data {
             DataType::Owned(v) => {
                 assert!(flat_idx < v.len()); // remove bounds check
@@ -163,7 +286,10 @@ impl<'a, const N: usize, T> IndexMut<[usize; N]> for ViewBase<'a, N, T> {
     }
 }
 
-impl<'a, const N: usize, T: PartialEq> PartialEq for ViewBase<'a, N, T> {
+impl<'a, const N: usize, T: PartialEq + Debug> PartialEq for ViewBase<'a, N, T>
+where
+    T: DataTraits,
+{
     fn eq(&self, other: &Self) -> bool {
         self.data == other.data
             && self.layout == other.layout

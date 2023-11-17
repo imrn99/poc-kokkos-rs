@@ -2,12 +2,16 @@
 //!
 //! ## Scope of the Project
 //!
-//! The main focus of this Proof-of-Concept is the architecture and approach used by
+//! ~~The main focus of this Proof-of-Concept is the architecture and approach used by
 //! [Kokkos][1] for data management. While multiple targets support (Serial, [rayon][2],
-//! OpenMP) could be interesting, it is not the priority.
+//! OpenMP) could be interesting, it is not the priority.~~
+//!
+//! Rudimentary data structure implementation being done, the goal is now to write a simple
+//! program using a `parallel_for` statement with satisfying portability as defined by Kokkos.
 //!
 //! Additionally, some features of Kokkos are not reproducible in Rust (GPU targetting,
 //! templating); These create limits for the implementation, hence the existence of this PoC.
+//! This makes limit-testing an fundamental part of the project.
 //!
 //!
 //! ## Quickstart
@@ -36,6 +40,9 @@
 //!   is used to spot potential scaling issues induced by the more complex structure of Views.
 //! - `mdrange_populate`: Compare performance of our implementation of MDRangePolicy compared to
 //!   regular implementation. Currently, only a serial implementation with no tiling is tested.
+//! - `feature`: Assess the correct usage of feature-specific backend. This one is meant to be run
+//!   multiple times, with varying features each time (e.g. no feature, then `rayon` to observe the
+//!   speedup).
 //!
 //!
 //! ### Examples
@@ -46,25 +53,47 @@
 //!
 //! The following examples are available:
 //!
-//! - `hello-world`: ...
-//! - `openmp-parallel`: ...
+//! - `hello_world`: ...
+//! - `hello_world_omp`: ...
 //!
+//!
+//! ## Features
+//!
+//! Using `features`, the crate can be compiled to use different backend for execution of parallel section.
+//! These can also be enabled in benchmarks.
+//!
+//! ```bash
+//! cargo build --features <FEATURE>
+//! ```
+//!
+//! Available features:
+//!
+//! - `rayon`: Uses the [rayon][2] crate to handle parallelization on CPU.
+//! - `threads` : Uses [`std::thread`] methods to handle parallelization on CPU.
+//! - `gpu`: Currently used as a way to gate GPU usage as this cannot be done in pure Rust.
 //!
 //! ## Compilation
+//!
+//! The build script will read the `CXX` environment variable to choose which C++ compiler to use
+//! for Rust/C++ interop. Note that the crate itself does not currently use C++ code, only examples
+//! do.
 //!
 //! ### Known issues
 //!
 //! - On MacOs: Does not work with Apple Clang
 //!   - Solution: Homebrew Clang or tinker with flags to get OpenMP to work
 //! - On MacOs: XCode 15.0 was shipped with a broken `ld`
-//!   - Solution: pass the flag `-ld_classic` to the linker.  This flag isn't
-//!     recognized by the `ld` of previous versions of XCode. Remove it from
-//!     `build.rs` if necessary.
+//!   - Solution: pass the flag `-ld_classic` to the linker. Note that this flag isn't
+//!     recognized by the `ld` of previous versions of XCode. The line needed is
+//!     written in the `build.rs` script, it just needs to be uncommented if necessary.
 //!
 //! [1]: https://kokkos.github.io/kokkos-core-wiki/index.html
 //! [2]: https://docs.rs/rayon/latest/rayon/
 
+//#![feature(type_alias_impl_trait)]
+
 #[cxx::bridge(namespace = "")]
+/// C++ inter-op code
 pub mod ffi {
     // C++ types and signatures exposed to Rust.
     unsafe extern "C++" {

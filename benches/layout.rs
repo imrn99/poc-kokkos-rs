@@ -1,4 +1,4 @@
-use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
+use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 
 // Currently a partial gemv showing the importance of layout
 // y = Ax / y = xA
@@ -82,31 +82,41 @@ fn f3(size: u32) {
 }
 
 pub fn criterion_benchmark(c: &mut Criterion) {
-    // Generate/Define the input
-    let data_size: u32 = 11; // 2048 length vector, 2048*2048 matrix
+    // 2^6..2^11 length vector, (2^6..2^11)*(2^6..2^11) square matrix
 
-    let mut group = c.benchmark_group("Layout Effect");
-    group.bench_with_input(
-        BenchmarkId::new("Matrix-Vector Product (iterators)", ""),
-        &data_size,
-        |b, &n| b.iter(|| f1(n)),
-    );
-    group.bench_with_input(
-        BenchmarkId::new("Matrix-Vector Product (indexes)", ""),
-        &data_size,
-        |b, &n| b.iter(|| f1_b(n)),
-    );
-    group.bench_with_input(
-        BenchmarkId::new("Vector-Matrix Product (indexes)", ""),
-        &data_size,
-        |b, &n| b.iter(|| f2(n)),
-    );
-    group.bench_with_input(
-        BenchmarkId::new("Vector-Matrix Product w/ adapted layout (iterators)", ""),
-        &data_size,
-        |b, &n| b.iter(|| f3(n)),
-    );
-    group.finish();
+    let mut group1 = c.benchmark_group("Matrix-Vector Product");
+    for data_size in 6..12 {
+        // f64 uses 8 bytes, we consider the inp to be the length of data long one dim
+        group1.throughput(Throughput::Bytes((8 * 2_usize.pow(data_size)).pow(2) as u64));
+        group1.bench_with_input(
+            BenchmarkId::new("using iterators", ""),
+            &data_size,
+            |b, &n| b.iter(|| f1(n)),
+        );
+        group1.bench_with_input(
+            BenchmarkId::new("using indices", ""),
+            &data_size,
+            |b, &n| b.iter(|| f1_b(n)),
+        );
+    }
+    group1.finish();
+
+    let mut group2 = c.benchmark_group("Vector-Matrix Product");
+    for data_size in 6..12 {
+        group2.throughput(Throughput::Bytes((8 * 2_usize.pow(data_size)).pow(2) as u64));
+        group2.bench_with_input(
+            BenchmarkId::new("using regular layout & indices", ""),
+            &data_size,
+            |b, &n| b.iter(|| f2(n)),
+        );
+        group2.bench_with_input(
+            BenchmarkId::new("using adapted layout & iterators", ""),
+            &data_size,
+            |b, &n| b.iter(|| f3(n)),
+        );
+    }
+
+    group2.finish();
 }
 
 criterion_group!(benches, criterion_benchmark);

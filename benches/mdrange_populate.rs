@@ -1,7 +1,8 @@
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
 use poc_kokkos_rs::{
+    functor::KernelArgs,
     routines::{
-        parallel_for,
+        dispatch::serial,
         parameters::{ExecutionPolicy, ExecutionSpace, RangePolicy, Schedule},
     },
     view::{parameters::Layout, ViewOwned},
@@ -15,12 +16,11 @@ use poc_kokkos_rs::{
 fn f1(length: usize) {
     let mut v_y = ViewOwned::new_from_data(vec![0.0; length], Layout::Right, [length]);
     black_box(&mut v_y); // prevents the first init to be optimized away
-    (0..500).for_each(|_| {
-        (0..length).for_each(|i| {
-            v_y[[i]] = 1.0;
-        });
-        black_box(&v_y);
-    })
+
+    (0..length).for_each(|i| {
+        v_y[[i]] = 1.0;
+    });
+    black_box(&v_y);
 }
 
 // 1D parallel_for (serial) init & populating
@@ -34,11 +34,14 @@ fn f1_b(length: usize) {
         schedule: Schedule::Static,
     };
 
-    (0..500).for_each(|_| {
-        let execp_loc = execp.clone();
-        parallel_for::<0, 1, _>(execp_loc, |[i]| v_y[[i]] = 1.0).unwrap();
-        black_box(&v_y);
-    })
+    let kernel = Box::new(|arg: KernelArgs<1>| match arg {
+        KernelArgs::Index1D(_) => unimplemented!(),
+        KernelArgs::IndexND(indices) => v_y[indices] = 1.0,
+        KernelArgs::Handle => unimplemented!(),
+    });
+
+    serial(execp, kernel).unwrap();
+    black_box(&v_y);
 }
 
 // 3D regular for init & populating
@@ -74,7 +77,13 @@ fn f2_b(length: usize) {
         schedule: Schedule::Static,
     };
 
-    parallel_for::<0, 3, _>(execp, |indices| v_y[indices] = 1.0).unwrap();
+    let kernel = Box::new(|arg: KernelArgs<3>| match arg {
+        KernelArgs::Index1D(_) => unimplemented!(),
+        KernelArgs::IndexND(indices) => v_y[indices] = 1.0,
+        KernelArgs::Handle => unimplemented!(),
+    });
+
+    serial(execp, kernel).unwrap();
     black_box(&v_y);
 }
 
@@ -115,7 +124,13 @@ fn f3_b(length: usize) {
         schedule: Schedule::Static,
     };
 
-    parallel_for::<0, 5, _>(execp, |indices| v_y[indices] = 1.0).unwrap();
+    let kernel = Box::new(|arg: KernelArgs<5>| match arg {
+        KernelArgs::Index1D(_) => unimplemented!(),
+        KernelArgs::IndexND(indices) => v_y[indices] = 1.0,
+        KernelArgs::Handle => unimplemented!(),
+    });
+
+    serial(execp, kernel).unwrap();
     black_box(&v_y);
 }
 

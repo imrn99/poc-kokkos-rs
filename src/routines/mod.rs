@@ -6,24 +6,28 @@
 //! `parallel_for` is currently the only statement considered for implementation;
 //!
 //! Parameters of aforementionned statements are defined in the [`parameters`] sub-module.
-//!
 
 pub mod dispatch;
 pub mod parameters;
 
 use std::fmt::Display;
 
-use self::{
-    dispatch::DispatchError,
-    parameters::{ExecutionPolicy, RangePolicy},
-};
+use crate::functor::KernelArgs;
+
+use self::{dispatch::DispatchError, parameters::ExecutionPolicy};
 
 // Enums
 
+/// Enum used to classify possible errors occuring in a parallel statement.
 #[derive(Debug)]
 pub enum StatementError {
-    InconsistentDepth,
+    /// Error occured during dispatch; The specific [DispatchError] is
+    /// used as the internal value of this variant.
     Dispatch(DispatchError),
+    /// Error raised when parallel hierarchy isn't respected.
+    InconsistentDepth,
+    /// ...
+    InconsistentExecSpace,
 }
 
 impl From<DispatchError> for StatementError {
@@ -35,10 +39,13 @@ impl From<DispatchError> for StatementError {
 impl Display for StatementError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            StatementError::Dispatch(e) => write!(f, "{}", e),
             StatementError::InconsistentDepth => {
                 write!(f, "inconsistent depth & range policy association")
             }
-            StatementError::Dispatch(e) => write!(f, "{}", e),
+            StatementError::InconsistentExecSpace => {
+                write!(f, "inconsistent depth & range policy association")
+            }
         }
     }
 }
@@ -46,52 +53,64 @@ impl Display for StatementError {
 impl std::error::Error for StatementError {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match self {
-            StatementError::InconsistentDepth => None,
             StatementError::Dispatch(e) => Some(e),
+            StatementError::InconsistentDepth => None,
+            StatementError::InconsistentExecSpace => None,
         }
     }
 }
 
 // Statements
 
-pub fn parallel_for<const DEPTH: u8, const N: usize, F>(
-    execp: ExecutionPolicy<N>,
-    func: F,
-) -> Result<(), StatementError>
-// potentially a handle in the result if we can make the kernel execution async
-where
-    F: FnMut([usize; N]), // for statement should not return a result
-{
-    // checks...
-    // hierarchy check
-    let d: u8 = match execp.range {
-        RangePolicy::RangePolicy(_) => 0,
-        RangePolicy::MDRangePolicy(_) => 0,
-        RangePolicy::TeamPolicy {
-            league_size: _,
-            team_size: _,
-            vector_size: _,
-        } => 0,
-        RangePolicy::PerTeam => 1,
-        RangePolicy::PerThread => 1,
-        RangePolicy::TeamThreadRange => 1,
-        RangePolicy::TeamThreadMDRange => 1,
-        RangePolicy::TeamVectorRange => 1,
-        RangePolicy::TeamVectorMDRange => 1,
-        RangePolicy::ThreadVectorRange => 2,
-        RangePolicy::ThreadVectorMDRange => 2,
-    };
-    assert_eq!(d, DEPTH);
+// All of this would be half as long if impl trait in type aliases was stabilized
 
-    // data prep?
+cfg_if::cfg_if! {
+    if #[cfg(any(feature = "rayon", feature = "threads", feature = "gpu"))] {
 
-    // dispatch
-    let res = match execp.space {
-        parameters::ExecutionSpace::Serial => dispatch::serial(execp, func),
-        parameters::ExecutionSpace::DeviceCPU => dispatch::cpu(execp, func),
-        parameters::ExecutionSpace::DeviceGPU => dispatch::gpu(execp, func),
-    };
+        /// Parallel For statement. The `const` generic argument should
+        /// be `0`, `1`, or `2` according to its position in a nested structure
+        /// (`0` being the most outer level, `2` the most inner level).
+        pub fn parallel_for<const N: usize>(
+            execp: ExecutionPolicy<N>,
+            func: impl Fn(KernelArgs<N>) + Send + Sync + Clone,
+        ) -> Result<(), StatementError> {
+            // checks...
 
-    // Ok or converts error
-    res.map_err(|e| e.into())
+            // data prep?
+            let kernel = Box::new(func);
+
+            // dispatch
+            let res = match execp.space {
+                parameters::ExecutionSpace::Serial => dispatch::serial(execp, kernel),
+                parameters::ExecutionSpace::DeviceCPU => dispatch::cpu(execp, kernel),
+                parameters::ExecutionSpace::DeviceGPU => dispatch::gpu(execp, kernel),
+            };
+
+            // Ok or converts error
+            res.map_err(|e| e.into())
+        }
+    } else {
+        /// Parallel For statement. The `const` generic argument should
+        /// be `0`, `1`, or `2` according to its position in a nested structure
+        /// (`0` being the most outer level, `2` the most inner level).
+        pub fn parallel_for<const N: usize>(
+            execp: ExecutionPolicy<N>,
+            func: impl FnMut(KernelArgs<N>),
+        ) -> Result<(), StatementError> {
+            // checks...
+
+            // data prep?
+            let kernel = Box::new(func);
+
+            // dispatch
+            let res = match execp.space {
+                parameters::ExecutionSpace::Serial => dispatch::serial(execp, kernel),
+                parameters::ExecutionSpace::DeviceCPU => dispatch::cpu(execp, kernel),
+                parameters::ExecutionSpace::DeviceGPU => dispatch::gpu(execp, kernel),
+            };
+
+            // Ok or converts error
+            res.map_err(|e| e.into())
+        }
+    }
 }

@@ -11,8 +11,10 @@
 
 use std::ops::Range;
 
-/// Execution Space enum. Used to specify the target device of execution for the
-/// dispatch. Defaults to [ExecutionSpace::Serial]
+/// Execution Space enum.
+///
+/// Used to specify the target device of execution for the dispatch.
+/// Defaults to [ExecutionSpace::Serial].
 #[derive(Debug, Default, Clone)]
 pub enum ExecutionSpace {
     #[default]
@@ -21,7 +23,7 @@ pub enum ExecutionSpace {
     /// Target the CPU. Execute the kernel in parallel by using a feature-determined
     /// backend.
     DeviceCPU,
-    /// Target the GPU. NOT SUPPORTED.
+    /// Target the GPU. UNIMPLEMENTED.
     DeviceGPU,
 }
 
@@ -44,7 +46,7 @@ pub enum RangePolicy<const N: usize> {
         vector_size: usize,
     },
 
-    // Specific range
+    // Specifics
     /// Policy used to ensure each team execute the body once and only once.
     PerTeam,
     /// Policy used to ensure each thread execute the body once and only once.
@@ -68,8 +70,9 @@ pub enum RangePolicy<const N: usize> {
     ThreadVectorMDRange,
 }
 
-/// Schedule enum. Used to set the workload scheduling policy.
-/// Defaults to [Schedule::Static].
+/// Schedule enum. CURRENTLY IGNORED.
+///
+/// Used to set the workload scheduling policy. Defaults to [Schedule::Static].
 #[derive(Debug, Default, Clone)]
 pub enum Schedule {
     #[default]
@@ -88,6 +91,6 @@ pub struct ExecutionPolicy<const N: usize> {
     pub space: ExecutionSpace,
     /// Iteration pattern used to handle the workload.
     pub range: RangePolicy<N>,
-    /// Scheduling policy for the dispatch.
+    /// Scheduling policy for the dispatch. CURRENTLY IGNORED.
     pub schedule: Schedule,
 }

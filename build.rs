@@ -26,7 +26,7 @@ fn main() {
     match env::consts::OS {
         "macos" => {
             println!("cargo:rustc-link-arg=-L/opt/homebrew/opt/libomp/lib");
-            println!("cargo:rustc-link-arg=-ld_classic");
+            //println!("cargo:rustc-link-arg=-ld_classic");
             println!("cargo:rustc-link-arg=-lomp");
         }
         "linux" => {
