@@ -23,7 +23,7 @@ fn f1(
     beta: f64,
 ) {
     let mut aa = ViewOwned::new_from_data(aa_init, Layout::Right, [length, length]);
-    let mut bb = ViewOwned::new_from_data(bb_init, Layout::Right, [length, length]);
+    let mut bb = ViewOwned::new_from_data(bb_init, Layout::Left, [length, length]); // optimal layout since we iterate inside columns :)
     let mut cc = ViewOwned::new_from_data(cc_init, Layout::Right, [length, length]);
     black_box(&mut aa);
     black_box(&mut bb);
@@ -35,10 +35,17 @@ fn f1(
         schedule: Schedule::Static,
     };
 
-    // y = alpha * A * x + beta * y
+    // C = alpha * A * B + beta * C
     let gemm_kernel = |arg: KernelArgs<1>| match arg {
+        // lines
         KernelArgs::Index1D(i) => {
-            todo!()
+            // cols
+            for j in 0..length {
+                // b[j, k] because was init using a layout left
+                let ab_ij: f64 = (0..length).map(|k| aa.get([i, k]) * bb.get([j, k])).sum();
+                let val: f64 = alpha * ab_ij + beta * cc.get([i, j]);
+                cc.set([i, j], val);
+            }
         }
         KernelArgs::IndexND(_) => unimplemented!(),
         KernelArgs::Handle => unimplemented!(),
@@ -57,7 +64,7 @@ fn f2(
     beta: f64,
 ) {
     let mut aa = ViewOwned::new_from_data(aa_init, Layout::Right, [length, length]);
-    let mut bb = ViewOwned::new_from_data(bb_init, Layout::Right, [length, length]);
+    let mut bb = ViewOwned::new_from_data(bb_init, Layout::Left, [length, length]); // optimal layout since we iterate inside columns :)
     let mut cc = ViewOwned::new_from_data(cc_init, Layout::Right, [length, length]);
     black_box(&mut aa);
     black_box(&mut bb);
@@ -69,10 +76,17 @@ fn f2(
         schedule: Schedule::Static,
     };
 
-    // y = alpha * A * x + beta * y
+    // C = alpha * A * B + beta * C
     let gemm_kernel = |arg: KernelArgs<1>| match arg {
+        // lines
         KernelArgs::Index1D(i) => {
-            todo!()
+            // cols
+            for j in 0..length {
+                // all b[k, j] for k values are adjacent in memory thanks to the LayoutLeft
+                let ab_ij: f64 = (0..length).map(|k| aa.get([i, k]) * bb.get([k, j])).sum();
+                let val: f64 = alpha * ab_ij + beta * cc.get([i, j]);
+                cc.set([i, j], val);
+            }
         }
         KernelArgs::IndexND(_) => unimplemented!(),
         KernelArgs::Handle => unimplemented!(),
@@ -83,7 +97,7 @@ fn f2(
 
 pub fn criterion_benchmark(c: &mut Criterion) {
     // Generate/Define the input
-    const DATA_SIZE: u32 = 12;
+    const DATA_SIZE: u32 = 10;
     let length = 2_usize.pow(DATA_SIZE);
     let seed: u64 = 9817498146784;
     let mut rng = SmallRng::seed_from_u64(seed);
