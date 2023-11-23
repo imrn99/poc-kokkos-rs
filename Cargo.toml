@@ -49,17 +49,17 @@ harness = false
 
 [[bench]]
 name = "axpy"
-path = "blas-speedup/axpy.rs"
+path = "benches/blas-speedup/axpy.rs"
 harness = false
 
 [[bench]]
 name = "gemv"
-path = "blas-speedup/gemv.rs"
+path = "benches/blas-speedup/gemv.rs"
 harness = false
 
 [[bench]]
 name = "gemm"
-path = "blas-speedup/gemm.rs"
+path = "benches/blas-speedup/gemm.rs"
 harness = false
 
 ## library overhead measures
