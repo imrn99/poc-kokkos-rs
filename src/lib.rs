@@ -38,11 +38,10 @@
 //!   is used to spot potential scaling issues induced by the more complex structure of Views.
 //! - `view_access`: Compare data access performances of regular vectors to [Views][view]; This
 //!   is used to spot potential scaling issues induced by the more complex structure of Views.
-//! - `mdrange_populate`: Compare performance of our implementation of MDRangePolicy compared to
-//!   regular implementation. Currently, only a serial implementation with no tiling is tested.
-//! - `feature`: Assess the correct usage of feature-specific backend. This one is meant to be run
-//!   multiple times, with varying features each time (e.g. no feature, then `rayon` to observe the
-//!   speedup).
+//! - `axpy` / `gemv` / `gemm`: Measure speedup on basic BLAS implementations by running the same kernel
+//!   in serial mode first, then using parallelization on CPU. _Meant to be executed using features_.
+//! - `hardcoded_gemm`: Compute the same operations as the `gemm` benchmark, but using a hardcoded implementation
+//!   instead of methods from the PoC. Used to assess the additional cost induced by the library.
 //!
 //!
 //! ### Examples
