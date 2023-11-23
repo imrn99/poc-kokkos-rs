@@ -31,6 +31,8 @@ cxx-build = "*"
 
 # BENCHMARKS
 
+## misc 
+
 [[bench]]
 name = "layout"
 harness = false
@@ -43,17 +45,24 @@ harness = false
 name = "view_access"
 harness = false
 
+## blas speedup measures
+
 [[bench]]
 name = "axpy"
+path = "blas-speedup/axpy.rs"
 harness = false
 
 [[bench]]
 name = "gemv"
+path = "blas-speedup/gemv.rs"
 harness = false
 
 [[bench]]
 name = "gemm"
+path = "blas-speedup/gemm.rs"
 harness = false
+
+## library overhead measures
 
 [[bench]]
 name = "hardcoded_gemm"
