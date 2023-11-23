@@ -23,11 +23,15 @@ num_cpus = {version = "1.0", optional=true}
 [dev-dependencies]
 criterion = { version = "*", features = ["html_reports"] }
 rand      = { version = "*", features = ["small_rng", "alloc"] }
+atomic   = {version = "0.5.3"}
+rayon    = {version = "*"}
 
 [build-dependencies]
 cxx-build = "*"
 
 # BENCHMARKS
+
+## misc 
 
 [[bench]]
 name = "layout"
@@ -41,10 +45,25 @@ harness = false
 name = "view_access"
 harness = false
 
+## blas speedup measures
+
 [[bench]]
 name = "axpy"
+path = "benches/blas-speedup/axpy.rs"
 harness = false
 
 [[bench]]
 name = "gemv"
+path = "benches/blas-speedup/gemv.rs"
+harness = false
+
+[[bench]]
+name = "gemm"
+path = "benches/blas-speedup/gemm.rs"
+harness = false
+
+## library overhead measures
+
+[[bench]]
+name = "hardcoded_gemm"
 harness = false
