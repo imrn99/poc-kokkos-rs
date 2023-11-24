@@ -41,8 +41,8 @@ fn f1(
         KernelArgs::Index1D(i) => {
             // cols
             for j in 0..length {
-                // b[j, k] because was init using a layout left
-                let ab_ij: f64 = (0..length).map(|k| aa.get([i, k]) * bb.get([j, k])).sum();
+                // all b[k, j] for k values are adjacent in memory thanks to the LayoutLeft
+                let ab_ij: f64 = (0..length).map(|k| aa.get([i, k]) * bb.get([k, j])).sum();
                 let val: f64 = alpha * ab_ij + beta * cc.get([i, j]);
                 cc.set([i, j], val);
             }
