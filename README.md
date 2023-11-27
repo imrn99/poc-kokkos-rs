@@ -39,16 +39,27 @@ cargo bench --bench bench_name
 All results are compiled to the `target/criterion/` folder. The following
 benchmarks are available:
 
-- `layout`: Matrix-Vector product computation; This is used to put numbers on the
-  importance of data layout in memory.
-- `view_init`: Compare initialization performances of regular vectors to [Views][view]; This
-  is used to spot potential scaling issues induced by the more complex structure of Views.
-- `view_access`: Compare data access performances of regular vectors to [Views][view]; This
-  is used to spot potential scaling issues induced by the more complex structure of Views.
+**Layout:**
+- `layout-comparison`: Bench a Matrix-Matrix product three times, using the worst possible layout,
+  the usual layout, and then the optimal layout for the operation. This shows the importance of layout
+  selection for performances.
+- `layout-size`: Bench a Matrix-Matrix product using the usual layout and the optimal layout,
+  over a range of sizes for the square matrices. This shows the influence of cache size over
+  layout importance.
+**Computation:**
 - `axpy` / `gemv` / `gemm`: Measure speedup on basic BLAS implementations by running the same kernel
   in serial mode first, then using parallelization on CPU. _Meant to be executed using features_.
 - `hardcoded_gemm`: Compute the same operations as the `gemm` benchmark, but using a hardcoded implementation
   instead of methods from the PoC. Used to assess the additional cost induced by the library.
+**Library overhead:**
+- `view_init`: Compare initialization performances of regular vectors to [Views][view]; This
+  is used to spot potential scaling issues induced by the more complex structure of Views.
+- `view_access`: Compare data access performances of regular vectors to [Views][view]; This
+  is used to spot potential scaling issues induced by the more complex structure of Views.
+
+Additionally, a kokkos-equivalent of the blas kernels can be found in the `blas-speedup-kokkos/`
+subdirectory. These are far from being the most optimized implementation, instead they are written
+as close-ish counterparts to the Rust benchmarks.
 
 
 ### Examples
