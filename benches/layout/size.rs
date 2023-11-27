@@ -1,4 +1,4 @@
-use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
+use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 use poc_kokkos_rs::{
     functor::KernelArgs,
     routines::{
@@ -13,7 +13,7 @@ use rand::{
     SeedableRng,
 };
 
-// Serial GEMM
+// GEMM - usual case layout
 fn f1(
     length: usize,
     aa_init: Vec<f64>,
@@ -22,15 +22,18 @@ fn f1(
     alpha: f64,
     beta: f64,
 ) {
+    // best case layout:
+    // iterate on lines -> line-major layout   (Right)
+    // iterate on rows  -> column-major layout (Left)
     let mut aa = ViewOwned::new_from_data(aa_init, Layout::Right, [length, length]);
-    let mut bb = ViewOwned::new_from_data(bb_init, Layout::Left, [length, length]); // optimal layout since we iterate inside columns :)
+    let mut bb = ViewOwned::new_from_data(bb_init, Layout::Right, [length, length]);
     let mut cc = ViewOwned::new_from_data(cc_init, Layout::Right, [length, length]);
     black_box(&mut aa);
     black_box(&mut bb);
     black_box(&mut cc);
 
     let execp = ExecutionPolicy {
-        space: ExecutionSpace::Serial,
+        space: ExecutionSpace::DeviceCPU,
         range: RangePolicy::RangePolicy(0..length),
         schedule: Schedule::Static,
     };
@@ -54,7 +57,7 @@ fn f1(
     black_box(&cc);
 }
 
-// DeviceCPU GEMM
+// GEMM - best case layout
 fn f2(
     length: usize,
     aa_init: Vec<f64>,
@@ -64,7 +67,7 @@ fn f2(
     beta: f64,
 ) {
     let mut aa = ViewOwned::new_from_data(aa_init, Layout::Right, [length, length]);
-    let mut bb = ViewOwned::new_from_data(bb_init, Layout::Left, [length, length]); // optimal layout since we iterate inside columns :)
+    let mut bb = ViewOwned::new_from_data(bb_init, Layout::Left, [length, length]);
     let mut cc = ViewOwned::new_from_data(cc_init, Layout::Right, [length, length]);
     black_box(&mut aa);
     black_box(&mut bb);
@@ -96,72 +99,73 @@ fn f2(
 }
 
 pub fn criterion_benchmark(c: &mut Criterion) {
-    // Generate/Define the input
-    const DATA_SIZE: u32 = 10;
-    let length = 2_usize.pow(DATA_SIZE);
-    let seed: u64 = 9817498146784;
-    let mut rng = SmallRng::seed_from_u64(seed);
-    let range: Uniform<f64> = rand::distributions::Uniform::new(0.0, 100.0);
-    let aa_init: Vec<f64> = (0..length * length)
-        .map(|_| range.sample(&mut rng))
-        .collect();
-    let bb_init: Vec<f64> = (0..length * length)
-        .map(|_| range.sample(&mut rng))
-        .collect();
-    let cc_init: Vec<f64> = (0..length * length)
-        .map(|_| range.sample(&mut rng))
-        .collect();
-    let alpha: f64 = range.sample(&mut rng);
-    let beta: f64 = range.sample(&mut rng);
-
-    let mut group = c.benchmark_group("gemm");
-    group.bench_with_input(
-        BenchmarkId::new("exec-serial", ""),
-        &(
-            length,
-            aa_init.clone(),
-            bb_init.clone(),
-            cc_init.clone(),
-            alpha,
-            beta,
-        ),
-        |b, (length, aa_init, bb_init, cc_init, alpha, beta)| {
-            b.iter(|| {
-                f1(
-                    *length,
-                    aa_init.clone(),
-                    bb_init.clone(),
-                    cc_init.clone(),
-                    *alpha,
-                    *beta,
-                )
-            })
-        },
-    );
-    group.bench_with_input(
-        BenchmarkId::new("exec-devicecpu", ""),
-        &(
-            length,
-            aa_init.clone(),
-            bb_init.clone(),
-            cc_init.clone(),
-            alpha,
-            beta,
-        ),
-        |b, (length, aa_init, bb_init, cc_init, alpha, beta)| {
-            b.iter(|| {
-                f2(
-                    *length,
-                    aa_init.clone(),
-                    bb_init.clone(),
-                    cc_init.clone(),
-                    *alpha,
-                    *beta,
-                )
-            })
-        },
-    );
-    group.finish()
+    let mut group = c.benchmark_group("sized-gemm");
+    for data_size in 5..11 {
+        let length = 2_usize.pow(data_size);
+        let seed: u64 = 9817498146784;
+        let mut rng = SmallRng::seed_from_u64(seed);
+        let range: Uniform<f64> = rand::distributions::Uniform::new(0.0, 100.0);
+        let aa_init: Vec<f64> = (0..length * length)
+            .map(|_| range.sample(&mut rng))
+            .collect();
+        let bb_init: Vec<f64> = (0..length * length)
+            .map(|_| range.sample(&mut rng))
+            .collect();
+        let cc_init: Vec<f64> = (0..length * length)
+            .map(|_| range.sample(&mut rng))
+            .collect();
+        let alpha: f64 = range.sample(&mut rng);
+        let beta: f64 = range.sample(&mut rng);
+        // f64 uses 8 bytes
+        group.throughput(Throughput::Bytes((8 * length).pow(2) as u64));
+        group.bench_with_input(
+            BenchmarkId::new("usual-layout", ""),
+            &(
+                length,
+                aa_init.clone(),
+                bb_init.clone(),
+                cc_init.clone(),
+                alpha,
+                beta,
+            ),
+            |b, (length, aa_init, bb_init, cc_init, alpha, beta)| {
+                b.iter(|| {
+                    f1(
+                        *length,
+                        aa_init.clone(),
+                        bb_init.clone(),
+                        cc_init.clone(),
+                        *alpha,
+                        *beta,
+                    )
+                })
+            },
+        );
+        group.bench_with_input(
+            BenchmarkId::new("best-layout", ""),
+            &(
+                length,
+                aa_init.clone(),
+                bb_init.clone(),
+                cc_init.clone(),
+                alpha,
+                beta,
+            ),
+            |b, (length, aa_init, bb_init, cc_init, alpha, beta)| {
+                b.iter(|| {
+                    f2(
+                        *length,
+                        aa_init.clone(),
+                        bb_init.clone(),
+                        cc_init.clone(),
+                        *alpha,
+                        *beta,
+                    )
+                })
+            },
+        );
+    }
+    group.finish();
 }
 
 criterion_group!(benches, criterion_benchmark);

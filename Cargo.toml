@@ -3,6 +3,13 @@ name = "poc-kokkos-rs"
 version = "0.1.0"
 edition = "2021"
 
+# OPTIMIZATION
+
+[profile.release]
+codegen-units = 1
+lto = "fat"
+panic = "abort"
+
 # FEATURES 
 
 [features]
@@ -34,15 +41,23 @@ cxx-build = "*"
 ## misc 
 
 [[bench]]
-name = "layout"
-harness = false
-
-[[bench]]
 name = "view_init"
 harness = false
 
 [[bench]]
 name = "view_access"
+harness = false
+
+## layout 
+
+[[bench]]
+name = "layout-size"
+path = "benches/layout/size.rs"
+harness = false
+
+[[bench]]
+name = "layout-comparison"
+path = "benches/layout/comparison.rs"
 harness = false
 
 ## blas speedup measures
