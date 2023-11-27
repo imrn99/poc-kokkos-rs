@@ -51,8 +51,8 @@ harness = false
 ## layout 
 
 [[bench]]
-name = "layout-effect"
-path = "benches/layout/hardcoded.rs"
+name = "layout-size"
+path = "benches/layout/size.rs"
 harness = false
 
 [[bench]]
