@@ -41,15 +41,23 @@ cxx-build = "*"
 ## misc 
 
 [[bench]]
-name = "layout"
-harness = false
-
-[[bench]]
 name = "view_init"
 harness = false
 
 [[bench]]
 name = "view_access"
+harness = false
+
+## layout 
+
+[[bench]]
+name = "layout-effect"
+path = "benches/layout/hardcoded.rs"
+harness = false
+
+[[bench]]
+name = "layout-comparison"
+path = "benches/layout/comparison.rs"
 harness = false
 
 ## blas speedup measures
