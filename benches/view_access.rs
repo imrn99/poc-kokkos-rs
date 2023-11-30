@@ -106,40 +106,40 @@ pub fn criterion_benchmark(c: &mut Criterion) {
         .map(|((i1, i2), i3)| (*i1, *i2, *i3))
         .collect();
 
-    let mut group1 = c.benchmark_group("1D access");
+    let mut group1 = c.benchmark_group("access-overhead-1D");
     group1.bench_with_input(
-        BenchmarkId::new("Vector Access", ""),
+        BenchmarkId::new("flat-vector", ""),
         &(length, indices1.clone()),
         |b, (n, i)| b.iter(|| f1(*n, i)),
     );
     group1.bench_with_input(
-        BenchmarkId::new("View Access", ""),
+        BenchmarkId::new("view", ""),
         &(length, indices1),
         |b, (n, i)| b.iter(|| f1_b(*n, i)),
     );
     group1.finish();
 
-    let mut group2 = c.benchmark_group("2D access");
+    let mut group2 = c.benchmark_group("access-overhead-2D");
     group2.bench_with_input(
-        BenchmarkId::new("Vector Access", ""),
+        BenchmarkId::new("flat-vector", ""),
         &(length, (indices2.clone())),
         |b, (n, i)| b.iter(|| f2(*n, i)),
     );
     group2.bench_with_input(
-        BenchmarkId::new("View Access", ""),
+        BenchmarkId::new("view", ""),
         &(length, (indices2)),
         |b, (n, i)| b.iter(|| f2_b(*n, i)),
     );
     group2.finish();
 
-    let mut group3 = c.benchmark_group("3D access");
+    let mut group3 = c.benchmark_group("access-overhead-3D");
     group3.bench_with_input(
-        BenchmarkId::new("Vector Access", ""),
+        BenchmarkId::new("flat-vector", ""),
         &(length, indices3.clone()),
         |b, (n, i)| b.iter(|| f3(*n, i)),
     );
     group3.bench_with_input(
-        BenchmarkId::new("View Access", ""),
+        BenchmarkId::new("view", ""),
         &(length, indices3),
         |b, (n, i)| b.iter(|| f3_b(*n, i)),
     );

@@ -79,7 +79,7 @@ pub fn criterion_benchmark(c: &mut Criterion) {
     let y_init: Vec<f64> = (0..length).map(|_| range.sample(&mut rng)).collect();
     let alpha: f64 = range.sample(&mut rng);
 
-    let mut group = c.benchmark_group("axpy");
+    let mut group = c.benchmark_group("speedup-axpy");
     group.bench_with_input(
         BenchmarkId::new("exec-serial", ""),
         &(x_init.clone(), y_init.clone(), alpha),

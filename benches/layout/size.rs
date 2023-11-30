@@ -99,7 +99,7 @@ fn f2(
 }
 
 pub fn criterion_benchmark(c: &mut Criterion) {
-    let mut group = c.benchmark_group("sized-gemm");
+    let mut group = c.benchmark_group("gemm-sizes");
     for data_size in 5..11 {
         let length = 2_usize.pow(data_size);
         let seed: u64 = 9817498146784;

@@ -114,7 +114,7 @@ pub fn criterion_benchmark(c: &mut Criterion) {
     let alpha: f64 = range.sample(&mut rng);
     let beta: f64 = range.sample(&mut rng);
 
-    let mut group = c.benchmark_group("gemm");
+    let mut group = c.benchmark_group("speedup-gemm");
     group.bench_with_input(
         BenchmarkId::new("exec-serial", ""),
         &(

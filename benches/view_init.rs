@@ -88,24 +88,22 @@ pub fn criterion_benchmark(c: &mut Criterion) {
     // Generate/Define the input
     let mut data_size: u32 = 11; // 2048 length vector, 2048*2048 matrix
 
-    let mut group1 = c.benchmark_group("1D view initialization");
+    let mut group1 = c.benchmark_group("init-overhead-1D");
+    group1.bench_with_input(BenchmarkId::new("vector-alloc", ""), &data_size, |b, &n| {
+        b.iter(|| f1(n))
+    });
     group1.bench_with_input(
-        BenchmarkId::new("Standard Vector Allocation", ""),
-        &data_size,
-        |b, &n| b.iter(|| f1(n)),
-    );
-    group1.bench_with_input(
-        BenchmarkId::new("Allocation & Init", ""),
+        BenchmarkId::new("view-alloc-then-init", ""),
         &data_size,
         |b, &n| b.iter(|| f1_b(n)),
     );
     group1.bench_with_input(
-        BenchmarkId::new("Inline? Allocation & Init", ""),
+        BenchmarkId::new("view-inline-alloc-init", ""),
         &data_size,
         |b, &n| b.iter(|| f1_bb(n)),
     );
     group1.bench_with_input(
-        BenchmarkId::new("Default View Init", ""),
+        BenchmarkId::new("view-default-init", ""),
         &data_size,
         |b, &n| b.iter(|| f1_bbb(n)),
     );
@@ -113,24 +111,22 @@ pub fn criterion_benchmark(c: &mut Criterion) {
 
     data_size = 10;
 
-    let mut group2 = c.benchmark_group("2D view initialization");
+    let mut group2 = c.benchmark_group("init-overhead-2D");
+    group2.bench_with_input(BenchmarkId::new("vector-alloc", ""), &data_size, |b, &n| {
+        b.iter(|| f2(n))
+    });
     group2.bench_with_input(
-        BenchmarkId::new("Standard Vector Allocation", ""),
-        &data_size,
-        |b, &n| b.iter(|| f2(n)),
-    );
-    group2.bench_with_input(
-        BenchmarkId::new("Allocation & Init", ""),
+        BenchmarkId::new("view-alloc-then-init", ""),
         &data_size,
         |b, &n| b.iter(|| f2_b(n)),
     );
     group2.bench_with_input(
-        BenchmarkId::new("Inline? Allocation & Init", ""),
+        BenchmarkId::new("view-inline-alloc-init", ""),
         &data_size,
         |b, &n| b.iter(|| f2_bb(n)),
     );
     group2.bench_with_input(
-        BenchmarkId::new("Default View Init", ""),
+        BenchmarkId::new("view-default-init", ""),
         &data_size,
         |b, &n| b.iter(|| f2_bbb(n)),
     );
