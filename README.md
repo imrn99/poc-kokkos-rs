@@ -33,7 +33,7 @@ Benchmarks can be run using the following command:
 # all benchmarks
 cargo bench
 # a specific benchmark
-cargo bench --bench bench_name
+cargo bench --bench <BENCHMARK>
 ```
 
 All results are compiled to the `target/criterion/` folder. The following
@@ -52,9 +52,9 @@ benchmarks are available:
 - `hardcoded_gemm`: Compute the same operations as the `gemm` benchmark, but using a hardcoded implementation
   instead of methods from the PoC. Used to assess the additional cost induced by the library.
 **Library overhead:**
-- `view_init`: Compare initialization performances of regular vectors to [Views][view]; This
+- `view_init`: Compare initialization performances of regular vectors to Views; This
   is used to spot potential scaling issues induced by the more complex structure of Views.
-- `view_access`: Compare data access performances of regular vectors to [Views][view]; This
+- `view_access`: Compare data access performances of regular vectors to Viewsview; This
   is used to spot potential scaling issues induced by the more complex structure of Views.
 
 Additionally, a kokkos-equivalent of the blas kernels can be found in the `blas-speedup-kokkos/`
@@ -65,7 +65,7 @@ as close-ish counterparts to the Rust benchmarks.
 ### Examples
 
 ```bash
-cargo run --example hello-world
+cargo run --example <EXAMPLE>
 ```
 
 The following examples are available:
@@ -77,7 +77,7 @@ The following examples are available:
 ## Features
 
 Using `features`, the crate can be compiled to use different backend for execution of parallel section.
-These can also be enabled in benchmarks.
+These can (and should) also be enabled in benchmarks.
 
 ```bash
 cargo build --features <FEATURE>
@@ -86,7 +86,7 @@ cargo build --features <FEATURE>
 Available features:
 
 - `rayon`: Uses the [rayon][2] crate to handle parallelization on CPU.
-- `threads` : Uses [`std::thread`] methods to handle parallelization on CPU.
+- `threads` : Uses `std::thread` methods to handle parallelization on CPU.
 - `gpu`: Currently used as a way to gate GPU usage as this cannot be done in pure Rust.
 
 ## Compilation
