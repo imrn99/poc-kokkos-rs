@@ -23,7 +23,7 @@ fn f1_b(length: usize, indices: &[usize]) {
     let idx = &indices[0..length];
 
     idx.iter().for_each(|i| {
-        let tmp = v_y[[*i]];
+        let tmp = v_y.get([*i]);
         black_box(tmp);
     })
 }
@@ -46,7 +46,7 @@ fn f2_b(length: usize, indices: &[(usize, usize)]) {
     let idx = &indices[0..length];
 
     idx.iter().for_each(|(i, j)| {
-        let tmp = v_y[[*i, *j]];
+        let tmp = v_y.get([*i, *j]);
         black_box(tmp);
     })
 }
@@ -79,7 +79,7 @@ fn f3_b(length: usize, indices: &[(usize, usize, usize)]) {
     let idx = &indices[0..length];
 
     idx.iter().for_each(|(i, j, k)| {
-        let tmp = v_y[[*i, *j, *k]];
+        let tmp = v_y.get([*i, *j, *k]);
         black_box(tmp);
     })
 }
