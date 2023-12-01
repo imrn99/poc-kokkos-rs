@@ -36,10 +36,16 @@ def main():
     for i in range(len(sizes)):
         percentLonger = (usualLayoutTimes[i] - bestLayoutTimes[i]) / bestLayoutTimes[i]
         percentsSlower.append(- 100*100 * percentLonger / (100.0 + percentLonger))
+    
+    # plot
+    plt.title("GEMM: Speed Gain = f(Data Size)")
+    plt.xlabel("Square Matrix Size (float)")
+    plt.ylabel("Percents (%)")
+    plt.ylim([-150, 10])
     plt.semilogx(base=2.0)
     plt.grid(visible=True, axis='y')
-    plt.plot(sizes, percentsSlower)
-    plt.show()
+    plt.scatter(sizes, percentsSlower, marker='+', color='r')
+    plt.savefig(fname="gemm-sizes-plot.svg", format="svg")
     
 
 main()
