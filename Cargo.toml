@@ -9,29 +9,30 @@ edition = "2021"
 codegen-units = 1
 lto = "fat"
 panic = "abort"
+debug = true
 
 # FEATURES 
 
 [features]
 threads = ["dep:atomic", "dep:num_cpus"]
-rayon =   ["dep:atomic", "dep:num_cpus", "dep:rayon"]
-gpu =     ["dep:atomic"]
+rayon = ["dep:atomic", "dep:num_cpus", "dep:rayon"]
+gpu = ["dep:atomic"]
 
 # DEPENDENCIES
 
 [dependencies]
-cxx      = "*"
-cfg-if   = "*"
-rayon    = {version = "*", optional=true}
-atomic   = {version = "0.5.3", optional=true}
-num_cpus = {version = "*", optional=true}
+cxx = "*"
+cfg-if = "*"
+rayon = { version = "*", optional = true }
+atomic = { version = "0.5.3", optional = true }
+num_cpus = { version = "*", optional = true }
 #bytemuck = {version = "*", optional=true} # needed for atomic >= 0.6.0
+rand = { version = "*", features = ["small_rng", "alloc"] }
 
 [dev-dependencies]
 criterion = { version = "*", features = ["html_reports"] }
-rand      = { version = "*", features = ["small_rng", "alloc"] }
-atomic   = {version = "0.5.3"}
-rayon    = {version = "*"}
+atomic = { version = "0.5.3" }
+rayon = { version = "*" }
 
 [build-dependencies]
 cxx-build = "*"
