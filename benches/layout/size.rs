@@ -13,14 +13,16 @@ use rand::{
     SeedableRng,
 };
 
+type FloatType = f64;
+
 // GEMM - usual case layout
 fn f1(
     length: usize,
-    aa_init: Vec<f64>,
-    bb_init: Vec<f64>,
-    cc_init: Vec<f64>,
-    alpha: f64,
-    beta: f64,
+    aa_init: Vec<FloatType>,
+    bb_init: Vec<FloatType>,
+    cc_init: Vec<FloatType>,
+    alpha: FloatType,
+    beta: FloatType,
 ) {
     // best case layout:
     // iterate on lines -> line-major layout   (Right)
@@ -45,8 +47,8 @@ fn f1(
             // cols
             for j in 0..length {
                 // all b[k, j] for k values are adjacent in memory thanks to the LayoutLeft
-                let ab_ij: f64 = (0..length).map(|k| aa.get([i, k]) * bb.get([k, j])).sum();
-                let val: f64 = alpha * ab_ij + beta * cc.get([i, j]);
+                let ab_ij: FloatType = (0..length).map(|k| aa.get([i, k]) * bb.get([k, j])).sum();
+                let val: FloatType = alpha * ab_ij + beta * cc.get([i, j]);
                 cc.set([i, j], val);
             }
         }
@@ -60,11 +62,11 @@ fn f1(
 // GEMM - best case layout
 fn f2(
     length: usize,
-    aa_init: Vec<f64>,
-    bb_init: Vec<f64>,
-    cc_init: Vec<f64>,
-    alpha: f64,
-    beta: f64,
+    aa_init: Vec<FloatType>,
+    bb_init: Vec<FloatType>,
+    cc_init: Vec<FloatType>,
+    alpha: FloatType,
+    beta: FloatType,
 ) {
     let mut aa = ViewOwned::new_from_data(aa_init, Layout::Right, [length, length]);
     let mut bb = ViewOwned::new_from_data(bb_init, Layout::Left, [length, length]);
@@ -86,8 +88,8 @@ fn f2(
             // cols
             for j in 0..length {
                 // all b[k, j] for k values are adjacent in memory thanks to the LayoutLeft
-                let ab_ij: f64 = (0..length).map(|k| aa.get([i, k]) * bb.get([k, j])).sum();
-                let val: f64 = alpha * ab_ij + beta * cc.get([i, j]);
+                let ab_ij: FloatType = (0..length).map(|k| aa.get([i, k]) * bb.get([k, j])).sum();
+                let val: FloatType = alpha * ab_ij + beta * cc.get([i, j]);
                 cc.set([i, j], val);
             }
         }
@@ -104,18 +106,18 @@ pub fn criterion_benchmark(c: &mut Criterion) {
         let length = 2_usize.pow(data_size);
         let seed: u64 = 9817498146784;
         let mut rng = SmallRng::seed_from_u64(seed);
-        let range: Uniform<f64> = rand::distributions::Uniform::new(0.0, 100.0);
-        let aa_init: Vec<f64> = (0..length * length)
+        let range: Uniform<FloatType> = rand::distributions::Uniform::new(0.0, 100.0);
+        let aa_init: Vec<FloatType> = (0..length * length)
             .map(|_| range.sample(&mut rng))
             .collect();
-        let bb_init: Vec<f64> = (0..length * length)
+        let bb_init: Vec<FloatType> = (0..length * length)
             .map(|_| range.sample(&mut rng))
             .collect();
-        let cc_init: Vec<f64> = (0..length * length)
+        let cc_init: Vec<FloatType> = (0..length * length)
             .map(|_| range.sample(&mut rng))
             .collect();
-        let alpha: f64 = range.sample(&mut rng);
-        let beta: f64 = range.sample(&mut rng);
+        let alpha: FloatType = range.sample(&mut rng);
+        let beta: FloatType = range.sample(&mut rng);
         // f64 uses 8 bytes
         group.throughput(Throughput::Bytes((8 * length).pow(2) as u64));
         group.bench_with_input(

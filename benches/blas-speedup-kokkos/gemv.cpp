@@ -14,7 +14,7 @@
 
 #include <Kokkos_Core.hpp>
 
-#define DATA_SIZE 15
+#define DATA_SIZE 12
 #define N_REPEAT 100
 
 
