@@ -1,5 +1,7 @@
 # This script is used to generate a speedup graph from the output
 # of the layout-size benchmark (criterion group gemm-sizes).
+# Additionally, it places vertical bars corresponding to dimensions
+# where matrix size exceed a certain threshold
 #
 # The script expects a single csv file, containing 3 lines:
 # - 1st line: data size (used as the X coordinate)
