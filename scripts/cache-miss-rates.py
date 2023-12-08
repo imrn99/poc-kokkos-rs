@@ -32,16 +32,17 @@ def main():
     percentsMore=[]
     for i in range(len(sizes)):
         percentsMore.append( 100 * (usualLayoutRates[i] - bestLayoutRates[i]) / bestLayoutRates[i])
-    
+
     # plot
     plt.title("GEMM: L1 Cache Miss-Rate Evolution = f(Data Size)")
-    plt.xlabel("Square Matrix Size (float)")
+    plt.xlabel("Square Matrix Dimension (# of rows/cols)")
     plt.ylabel("Miss-Rate (%)")
     
     plt.semilogx(base=2.0)
     plt.grid(visible=True, axis='y')
-    plt.scatter(sizes, usualLayoutRates, marker='+', color='r')
-    plt.scatter(sizes, bestLayoutRates, marker='x', color='b')
+    plt.scatter(sizes, usualLayoutRates, marker='+', color='r', label="usual-layout")
+    plt.scatter(sizes, bestLayoutRates, marker='x', color='b', label="best-layout")
+    plt.legend()
     plt.savefig(fname="cache-miss-rates.svg", format="svg")
     
 
