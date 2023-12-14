@@ -1,9 +1,7 @@
 //! parallel statement related code
 //!
-//! This module contains code used for the implementations of parallel statements, e.g.
-//! `parallel_for`, a Kokkos specific implementation of the commonly used pattern.
-//!
-//! `parallel_for` is currently the only statement considered for implementation;
+//! This module contains code used for the implementation of parallel statements, e.g.
+//! `parallel_for`, a Kokkos specific implementation of commonly used patterns.
 //!
 //! Parameters of aforementionned statements are defined in the [`parameters`] sub-module.
 
@@ -26,7 +24,7 @@ pub enum StatementError {
     Dispatch(DispatchError),
     /// Error raised when parallel hierarchy isn't respected.
     InconsistentDepth,
-    /// ...
+    /// What did I mean by this?
     InconsistentExecSpace,
 }
 
@@ -44,7 +42,7 @@ impl Display for StatementError {
                 write!(f, "inconsistent depth & range policy association")
             }
             StatementError::InconsistentExecSpace => {
-                write!(f, "inconsistent depth & range policy association")
+                write!(f, "?")
             }
         }
     }
@@ -67,9 +65,7 @@ impl std::error::Error for StatementError {
 cfg_if::cfg_if! {
     if #[cfg(any(feature = "rayon", feature = "threads", feature = "gpu"))] {
 
-        /// Parallel For statement. The `const` generic argument should
-        /// be `0`, `1`, or `2` according to its position in a nested structure
-        /// (`0` being the most outer level, `2` the most inner level).
+        /// Parallel For statement.
         pub fn parallel_for<const N: usize>(
             execp: ExecutionPolicy<N>,
             func: impl Fn(KernelArgs<N>) + Send + Sync + Clone,
@@ -90,9 +86,7 @@ cfg_if::cfg_if! {
             res.map_err(|e| e.into())
         }
     } else {
-        /// Parallel For statement. The `const` generic argument should
-        /// be `0`, `1`, or `2` according to its position in a nested structure
-        /// (`0` being the most outer level, `2` the most inner level).
+        /// Parallel For statement.
         pub fn parallel_for<const N: usize>(
             execp: ExecutionPolicy<N>,
             func: impl FnMut(KernelArgs<N>),
