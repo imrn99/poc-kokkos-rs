@@ -74,7 +74,7 @@
 pub mod ffi {
     // C++ types and signatures exposed to Rust.
     unsafe extern "C++" {
-        include!("poc-kokkos-rs/include/hello.hpp");
+        include!("poc-kokkos-rs/src/include/hello.hpp");
 
         fn say_hello();
 
