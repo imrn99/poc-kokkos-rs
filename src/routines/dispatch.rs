@@ -5,7 +5,7 @@
 //! items are, i.e. documentation is altered by enabled features.
 
 #[cfg(feature = "rayon")]
-use rayon::prelude::*;
+use {crate::functor::ForKernelType, rayon::prelude::*};
 
 use std::{fmt::Display, ops::Range};
 
@@ -153,7 +153,7 @@ cfg_if::cfg_if! {
         /// Backend-specific function for [std::thread] usage.
         pub fn cpu<'a, const N: usize>(
             execp: ExecutionPolicy<N>,
-            kernel: Box<impl Fn(KernelArgs<N>) + Send + Sync + 'a + Clone>,
+            kernel: Box<impl Fn(KernelArgs<N>) + Send + Sync + 'a + Clone>, // cannot be replaced by functor type bc of Clone
         ) -> Result<(), DispatchError> {
             match execp.range {
                 RangePolicy::RangePolicy(range) => {
@@ -220,7 +220,7 @@ cfg_if::cfg_if! {
         /// Backend-specific function for [rayon](https://docs.rs/rayon/latest/rayon/) usage.
         pub fn cpu<'a, const N: usize>(
             execp: ExecutionPolicy<N>,
-            kernel: Box<impl Fn(KernelArgs<N>) + Send + Sync + 'a + Clone>,
+            kernel: ForKernelType<N>,
         ) -> Result<(), DispatchError> {
             match execp.range {
                 RangePolicy::RangePolicy(range) => {
@@ -290,7 +290,7 @@ cfg_if::cfg_if! {
         /// Dispatch routine for GPU parallelization. UNIMPLEMENTED
         pub fn gpu<'a, const N: usize>(
             execp: ExecutionPolicy<N>,
-            kernel: Box<impl Fn(KernelArgs<N>) + Send + Sync + 'a + Clone>,
+            kernel: ForKernelType<N>,
         ) -> Result<(), DispatchError> {
             serial(execp, kernel)
         }
@@ -298,7 +298,7 @@ cfg_if::cfg_if! {
         /// Dispatch routine for GPU parallelization. UNIMPLEMENTED
         pub fn gpu<const N: usize>(
             execp: ExecutionPolicy<N>,
-            kernel: Box<impl FnMut(KernelArgs<N>)>,
+            kernel: SerialForKernelType<N>,
         ) -> Result<(), DispatchError> {
             serial(execp, kernel)
         }
