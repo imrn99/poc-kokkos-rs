@@ -2,71 +2,39 @@
 //!
 //! ## Scope of the Project
 //!
-//! ~~The main focus of this Proof-of-Concept is the architecture and approach used by
-//! [Kokkos][1] for data management. While multiple targets support (Serial, [rayon][2],
-//! OpenMP) could be interesting, it is not the priority.~~
+//! The goal of this project is not to produce an entire Kokkos implementation nor to
+//! replicate the existing C++ library. While the current C++ source code is interesting
+//! to use as inspiration, the main reference is the model description.
 //!
-//! Rudimentary data structure implementation being done, the goal is now to write a simple
-//! program using a `parallel_for` statement with satisfying portability as defined by Kokkos.
-//!
-//! Additionally, some features of Kokkos are not reproducible in Rust (GPU targetting,
-//! templating); These create limits for the implementation, hence the existence of this PoC.
-//! This makes limit-testing an fundamental part of the project.
+//! Additionally, because of language specific features (Rust strict compilation rules,
+//! C++ templates), you can expect the underlying implementation of concepts to be
+//! vastly different.
 //!
 //!
 //! ## Quickstart
 //!
-//! The PoC itself is a library, but you can run benchmarks and examples out of the box.
-//!
-//! ### Benchmarks
-//!
-//! Benchmarks can be run using the following command:
+//! The PoC itself is a library, but you can run benchmarks and examples out of the box:
 //!
 //! ```bash
 //! # all benchmarks
 //! cargo bench
 //! # a specific benchmark
-//! cargo bench --bench bench_name
+//! cargo bench --bench <BENCHMARK>
+//! # a specific example
+//! cargo run --example <EXAMPLE>
 //! ```
 //!
-//! All results are compiled to the `target/criterion/` folder. The following
-//! benchmarks are available:
-//!
-//! **Layout:**
-//! - `layout-comparison`: Bench a Matrix-Matrix product three times, using the worst possible layout,
-//!   the usual layout, and then the optimal layout for the operation. This shows the importance of layout
-//!   selection for performances.
-//! - `layout-size`: Bench a Matrix-Matrix product using the usual layout and the optimal layout,
-//!   over a range of sizes for the square matrices. This shows the influence of cache size over
-//!   layout importance.
-//! **Computation:**
-//! - `axpy` / `gemv` / `gemm`: Measure speedup on basic BLAS implementations by running the same kernel
-//!   in serial mode first, then using parallelization on CPU. _Meant to be executed using features_.
-//! - `hardcoded_gemm`: Compute the same operations as the `gemm` benchmark, but using a hardcoded implementation
-//!   instead of methods from the PoC. Used to assess the additional cost induced by the library.
-//! **Library overhead:**
-//! - `view_init`: Compare initialization performances of regular vectors to [Views][view]; This
-//!   is used to spot potential scaling issues induced by the more complex structure of Views.
-//! - `view_access`: Compare data access performances of regular vectors to [Views][view]; This
-//!   is used to spot potential scaling issues induced by the more complex structure of Views.
-//!
-//! Additionally, a kokkos-equivalent of the blas kernels can be found in the `blas-speedup-kokkos/`
-//! subdirectory. These are far from being the most optimized implementation, instead they are written
-//! as close-ish counterparts to the Rust benchmarks.
-//!
-//! ### Examples
+//! Generate local documentation:
 //!
 //! ```bash
-//! cargo run --example hello-world
+//! cargo doc --no-deps --open
 //! ```
 //!
-//! The following examples are available:
+//! Note that some elements of the documentation are feature specific.
 //!
-//! - `hello_world`: ...
-//! - `hello_world_omp`: ...
+//! ## Compilation
 //!
-//!
-//! ## Features
+//! ### Features
 //!
 //! Using `features`, the crate can be compiled to use different backend for execution of parallel section.
 //! These can also be enabled in benchmarks.
@@ -81,13 +49,13 @@
 //! - `threads` : Uses [`std::thread`] methods to handle parallelization on CPU.
 //! - `gpu`: Currently used as a way to gate GPU usage as this cannot be done in pure Rust.
 //!
-//! ## Compilation
+//! ### C++ Interoperability
 //!
 //! The build script will read the `CXX` environment variable to choose which C++ compiler to use
 //! for Rust/C++ interop. Note that the crate itself does not currently use C++ code, only examples
 //! do.
 //!
-//! ### Known issues
+//! #### Known issues
 //!
 //! - On MacOs: Does not work with Apple Clang
 //!   - Solution: Homebrew Clang or tinker with flags to get OpenMP to work
