@@ -27,6 +27,8 @@ use crate::routines::parameters::RangePolicy;
 /// One-dimensional kernel:
 /// ```
 /// // Range is defined in the execution policy
+/// use poc_kokkos_rs::functor::KernelArgs;
+///
 /// let kern = |arg: KernelArgs<1>| match arg {
 ///         KernelArgs::Index1D(i) => {
 ///             // body of the kernel
@@ -39,6 +41,8 @@ use crate::routines::parameters::RangePolicy;
 ///
 /// 3D kernel:
 /// ```
+/// use poc_kokkos_rs::functor::KernelArgs;
+///
 /// // Use the array
 /// let kern = |arg: KernelArgs<3>| match arg {
 ///         KernelArgs::Index1D(_) => unimplemented!(),
