@@ -73,6 +73,37 @@ cfg_if::cfg_if! {
         /// Parallel For statement.
         ///
         /// Current version: `threads`
+        ///
+        /// ### Example
+        ///
+        /// ```rust
+        /// use poc_kokkos_rs::{
+        ///     functor::KernelArgs,
+        ///     routines::{
+        ///         parallel_for,
+        ///         parameters::{ExecutionPolicy, ExecutionSpace, RangePolicy, Schedule},
+        ///     },
+        /// };
+        ///
+        /// let length: usize = 8;
+        ///
+        /// let kern = |arg: KernelArgs<1>| match arg {
+        ///         KernelArgs::Index1D(i) => {
+        ///             // body of the kernel
+        ///             println!("Hello from iteration {i}")
+        ///         },
+        ///         KernelArgs::IndexND(_) => unimplemented!(),
+        ///         KernelArgs::Handle => unimplemented!(),
+        ///     };
+        ///
+        /// let execp =  ExecutionPolicy {
+        ///         space: ExecutionSpace::DeviceCPU,
+        ///         range: RangePolicy::RangePolicy(0..length),
+        ///         schedule: Schedule::Static,
+        ///     };
+        ///
+        /// parallel_for(execp, kern).unwrap();
+        /// ```
         pub fn parallel_for<const N: usize>(
             execp: ExecutionPolicy<N>,
             func: impl Fn(KernelArgs<N>) + Send + Sync + Clone,
@@ -96,6 +127,37 @@ cfg_if::cfg_if! {
         /// Parallel For statement.
         ///
         /// Current version: `rayon`
+        ///
+        /// ### Example
+        ///
+        /// ```rust
+        /// use poc_kokkos_rs::{
+        ///     functor::KernelArgs,
+        ///     routines::{
+        ///         parallel_for,
+        ///         parameters::{ExecutionPolicy, ExecutionSpace, RangePolicy, Schedule},
+        ///     },
+        /// };
+        ///
+        /// let length: usize = 8;
+        ///
+        /// let kern = |arg: KernelArgs<1>| match arg {
+        ///         KernelArgs::Index1D(i) => {
+        ///             // body of the kernel
+        ///             println!("Hello from iteration {i}")
+        ///         },
+        ///         KernelArgs::IndexND(_) => unimplemented!(),
+        ///         KernelArgs::Handle => unimplemented!(),
+        ///     };
+        ///
+        /// let execp =  ExecutionPolicy {
+        ///         space: ExecutionSpace::DeviceCPU,
+        ///         range: RangePolicy::RangePolicy(0..length),
+        ///         schedule: Schedule::Static,
+        ///     };
+        ///
+        /// parallel_for(execp, kern).unwrap();
+        /// ```
         pub fn parallel_for<const N: usize>(
             execp: ExecutionPolicy<N>,
             func: impl Fn(KernelArgs<N>) + Send + Sync,
@@ -119,6 +181,37 @@ cfg_if::cfg_if! {
         /// Parallel For statement.
         ///
         /// Current version: no feature
+        ///
+        /// ### Example
+        ///
+        /// ```rust
+        /// use poc_kokkos_rs::{
+        ///     functor::KernelArgs,
+        ///     routines::{
+        ///         parallel_for,
+        ///         parameters::{ExecutionPolicy, ExecutionSpace, RangePolicy, Schedule},
+        ///     },
+        /// };
+        ///
+        /// let length: usize = 8;
+        ///
+        /// let kern = |arg: KernelArgs<1>| match arg {
+        ///         KernelArgs::Index1D(i) => {
+        ///             // body of the kernel
+        ///             println!("Hello from iteration {i}")
+        ///         },
+        ///         KernelArgs::IndexND(_) => unimplemented!(),
+        ///         KernelArgs::Handle => unimplemented!(),
+        ///     };
+        ///
+        /// let execp =  ExecutionPolicy {
+        ///         space: ExecutionSpace::DeviceCPU,
+        ///         range: RangePolicy::RangePolicy(0..length),
+        ///         schedule: Schedule::Static,
+        ///     };
+        ///
+        /// parallel_for(execp, kern).unwrap();
+        /// ```
         pub fn parallel_for<const N: usize>(
             execp: ExecutionPolicy<N>,
             func: impl FnMut(KernelArgs<N>),

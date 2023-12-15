@@ -28,8 +28,9 @@ pub enum ExecutionSpace {
 }
 
 #[derive(Debug, Clone)]
-/// Range Policy enum. This holds information related to the looping structure
-/// adopted by the routine.
+/// Range Policy enum.
+///
+/// This holds information related to the looping structure adopted by the routine.
 pub enum RangePolicy<const N: usize> {
     // Outer range
     /// 1D iteration range.
@@ -70,7 +71,7 @@ pub enum RangePolicy<const N: usize> {
     ThreadVectorMDRange,
 }
 
-/// Schedule enum. CURRENTLY IGNORED.
+/// Scheduling enum. CURRENTLY IGNORED.
 ///
 /// Used to set the workload scheduling policy. Defaults to [Schedule::Static].
 #[derive(Debug, Default, Clone)]
@@ -86,6 +87,25 @@ pub enum Schedule {
 
 #[derive(Debug, Clone)]
 /// Execution Policy enum. See Kokkos documentation for explanation on their model.
+///
+/// ### Example
+///
+/// ```rust
+/// use poc_kokkos_rs::routines::parameters::{
+///     ExecutionPolicy,
+///     ExecutionSpace,
+///     RangePolicy,
+///     Schedule
+/// };
+///
+/// let length: usize = 8;
+///
+/// let execp =  ExecutionPolicy::<1> {
+///         space: ExecutionSpace::DeviceCPU, // will try to parallelize code on CPU
+///         range: RangePolicy::RangePolicy(0..length), // equivalent to "for i in 0..length"
+///         schedule: Schedule::Static, // static division of workload
+///     };
+/// ```
 pub struct ExecutionPolicy<const N: usize> {
     /// Execution space targetted by the dispatch.
     pub space: ExecutionSpace,
