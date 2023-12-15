@@ -39,10 +39,12 @@ jobs:
           command: test
       - uses: actions-rs/cargo@v1
         with:
-          command: test --features rayon
+          command: test
+          args: --features rayon
       - uses: actions-rs/cargo@v1
         with:
-          command: test --features threads
+          command: test
+          args: --features threads
 
   fmt:
     name: Rustfmt
