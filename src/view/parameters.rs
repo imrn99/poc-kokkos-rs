@@ -10,9 +10,7 @@
 //! Possible future implementations include:
 //!
 //! - Memory space
-//! - Memory traits?
-//!
-//!
+//! - Memory traits
 
 use std::fmt::Debug;
 
@@ -22,21 +20,47 @@ use atomic::Atomic;
 /// Maximum possible depth (i.e. number of dimensions) for a view.
 pub const MAX_VIEW_DEPTH: usize = 8;
 
+/// Supertrait with common trait that elements of a View should implement.
 pub trait DataTraits: Debug + Clone + Copy + Default {}
 
 impl DataTraits for f64 {}
 impl DataTraits for f32 {}
 
 #[cfg(not(any(feature = "rayon", feature = "threads", feature = "gpu")))]
+/// Generic alias for elements of type `T` of a View.
+///
+/// This alias automatically changes according to features to ensure thread-safety
+/// of Views. There are two possible values:
+///
+/// - any feature enabled: `InnerDataType<T> = Atomic<T>`. By adding the atomic wrapping,
+/// operations on views can be implemented using thread-safe methods.
+/// - no feature enabled: `InnerDataType<T> = T`.
+///
+/// Current version: no feature
 pub type InnerDataType<T> = T;
 
 #[cfg(any(feature = "rayon", feature = "threads", feature = "gpu"))]
+/// Generic alias for elements of type `T` of a View.
+///
+/// This alias automatically changes according to features to ensure thread-safety
+/// of Views. There are two possible values:
+///
+/// - any feature enabled: `InnerDataType<T> = Atomic<T>`. By adding the atomic wrapping,
+/// operations on views can be implemented using thread-safe methods.
+/// - no feature enabled: `InnerDataType<T> = T`.
+///
+/// Current version: thread-safe
 pub type InnerDataType<T> = Atomic<T>;
 
 #[derive(Debug)]
-/// Enum used to identify the type of data the view is holding. See variants for more
-/// information. The policy used to implement the [PartialEq] trait is based on Kokkos'
+/// Enum used to identify the type of data the view is holding.
+///
+/// This should eventually be removed. See the [view][crate::view] module documentation
+/// for more information.
+///
+/// The policy used to implement the [PartialEq] trait is based on Kokkos'
 /// [`equal` algorithm](https://kokkos.github.io/kokkos-core-wiki/API/algorithms/std-algorithms/all/StdEqual.html).
+/// Essentially, it corresponds to equality by reference instead of equality by value.
 pub enum DataType<'a, T>
 where
     T: DataTraits,
@@ -49,9 +73,6 @@ where
     MutBorrowed(&'a mut [InnerDataType<T>]),
 }
 
-/// Kokkos implements equality check by comparing the pointers, i.e.
-/// two views are "equal" if and only if their data field points to the
-/// same memory space.
 impl<'a, T> PartialEq for DataType<'a, T>
 where
     T: DataTraits,
