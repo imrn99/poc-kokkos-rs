@@ -4,6 +4,12 @@
 //! `parallel_for`, a Kokkos specific implementation of commonly used patterns.
 //!
 //! Parameters of aforementionned statements are defined in the [`parameters`] sub-module.
+//!
+//! Dispatch code is defined in the [`dispatch`] sub-module.
+//!
+//! Currently implemented statements:
+//!
+//! - `parallel_for`
 
 pub mod dispatch;
 pub mod parameters;
@@ -63,9 +69,10 @@ impl std::error::Error for StatementError {
 // All of this would be half as long if impl trait in type aliases was stabilized
 
 cfg_if::cfg_if! {
-    if #[cfg(any(feature = "rayon", feature = "threads", feature = "gpu"))] {
-
+    if #[cfg(feature = "threads")] {
         /// Parallel For statement.
+        ///
+        /// Current version: `threads`
         pub fn parallel_for<const N: usize>(
             execp: ExecutionPolicy<N>,
             func: impl Fn(KernelArgs<N>) + Send + Sync + Clone,
@@ -85,8 +92,33 @@ cfg_if::cfg_if! {
             // Ok or converts error
             res.map_err(|e| e.into())
         }
+    } else if #[cfg(feature = "rayon")] {
+        /// Parallel For statement.
+        ///
+        /// Current version: `rayon`
+        pub fn parallel_for<const N: usize>(
+            execp: ExecutionPolicy<N>,
+            func: impl Fn(KernelArgs<N>) + Send + Sync,
+        ) -> Result<(), StatementError> {
+            // checks...
+
+            // data prep?
+            let kernel = Box::new(func);
+
+            // dispatch
+            let res = match execp.space {
+                parameters::ExecutionSpace::Serial => dispatch::serial(execp, kernel),
+                parameters::ExecutionSpace::DeviceCPU => dispatch::cpu(execp, kernel),
+                parameters::ExecutionSpace::DeviceGPU => dispatch::gpu(execp, kernel),
+            };
+
+            // Ok or converts error
+            res.map_err(|e| e.into())
+        }
     } else {
         /// Parallel For statement.
+        ///
+        /// Current version: no feature
         pub fn parallel_for<const N: usize>(
             execp: ExecutionPolicy<N>,
             func: impl FnMut(KernelArgs<N>),

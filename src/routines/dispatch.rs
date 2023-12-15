@@ -3,11 +3,15 @@
 //! This module contains all code used to dispatch computational kernels
 //! onto specified devices. Note that the documentation is feature-specific when the
 //! items are, i.e. documentation is altered by enabled features.
+//!
+//! The methods desccribed in this module are not meant to be used directly, they are only
+//! building blocks for the parallel statements.
 
-#[cfg(all(doc, not(feature = "rayon")))]
+#[cfg(any(doc, feature = "rayon", feature = "gpu"))]
 use crate::functor::ForKernelType;
+
 #[cfg(feature = "rayon")]
-use {crate::functor::ForKernelType, rayon::prelude::*};
+use rayon::prelude::*;
 
 use std::{fmt::Display, ops::Range};
 
@@ -328,10 +332,10 @@ cfg_if::cfg_if! {
     if #[cfg(feature = "gpu")] {
         /// GPU Dispatch routine of `for` statements. UNIMPLEMENTED
         pub fn gpu<'a, const N: usize>(
-            execp: ExecutionPolicy<N>,
-            kernel: ForKernelType<N>,
+            _execp: ExecutionPolicy<N>,
+            _kernel: ForKernelType<N>,
         ) -> Result<(), DispatchError> {
-            serial(execp, kernel)
+            unimplemented!()
         }
     } else {
         /// GPU Dispatch routine of `for` statements. UNIMPLEMENTED
