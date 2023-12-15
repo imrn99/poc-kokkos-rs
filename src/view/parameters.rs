@@ -36,7 +36,7 @@ impl DataTraits for f32 {}
 /// operations on views can be implemented using thread-safe methods.
 /// - no feature enabled: `InnerDataType<T> = T`.
 ///
-/// Current version: no feature
+/// **Current version**: no feature
 pub type InnerDataType<T> = T;
 
 #[cfg(any(feature = "rayon", feature = "threads", feature = "gpu"))]
@@ -49,7 +49,7 @@ pub type InnerDataType<T> = T;
 /// operations on views can be implemented using thread-safe methods.
 /// - no feature enabled: `InnerDataType<T> = T`.
 ///
-/// Current version: thread-safe
+/// **Current version**: thread-safe
 pub type InnerDataType<T> = Atomic<T>;
 
 #[derive(Debug)]

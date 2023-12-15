@@ -170,7 +170,7 @@ cfg_if::cfg_if! {
         /// The `threads` implementation cannot currently use the generic [`ForKernelType`] because
         /// of the Clone requirement.
         ///
-        /// Current version: `threads`
+        /// **Current version**: `threads`
         pub fn cpu<'a, const N: usize>(
             execp: ExecutionPolicy<N>,
             kernel: Box<impl Fn(KernelArgs<N>) + Send + Sync + 'a + Clone>, // cannot be replaced by functor type bc of Clone
@@ -248,7 +248,7 @@ cfg_if::cfg_if! {
         /// The `threads` implementation cannot currently use the generic [`ForKernelType`] because
         /// of the Clone requirement.
         ///
-        /// Current version: `rayon`
+        /// **Current version**: `rayon`
         pub fn cpu<'a, const N: usize>(
             execp: ExecutionPolicy<N>,
             kernel: ForKernelType<N>,
@@ -318,7 +318,7 @@ cfg_if::cfg_if! {
         /// The `threads` implementation cannot currently use the generic [`ForKernelType`] because
         /// of the Clone requirement.
         ///
-        /// Current version: no feature
+        /// **Current version**: no feature
         pub fn cpu<const N: usize>(
             execp: ExecutionPolicy<N>,
             kernel: SerialForKernelType<N>,

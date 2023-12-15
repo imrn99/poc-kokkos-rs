@@ -84,7 +84,7 @@ cfg_if::cfg_if! {
         /// - `threads` feature enabled: `Box<dyn Fn(KernelArgs<N>) + Send + 'a>`
         /// - no feature enabled: fall back to [`SerialForKernelType`][SerialForKernelType]
         ///
-        /// Current version: `rayon`
+        /// **Current version**: `rayon`
         pub type ForKernelType<'a, const N: usize> = Box<dyn Fn(KernelArgs<N>) + Send + Sync + 'a>;
     } else if #[cfg(feature = "threads")] {
         /// `parallel_for` kernel type. Depends on enabled feature(s).
@@ -97,7 +97,7 @@ cfg_if::cfg_if! {
         /// - `threads` feature enabled: `Box<dyn Fn(KernelArgs<N>) + Send + 'a>`
         /// - no feature enabled: fall back to [`SerialForKernelType`][SerialForKernelType]
         ///
-        /// Current version: `threads`
+        /// **Current version**: `threads`
         pub type ForKernelType<'a, const N: usize> = Box<dyn Fn(KernelArgs<N>) + Send + 'a>;
     } else {
         /// `parallel_for` kernel type. Depends on enabled feature(s).
@@ -110,7 +110,7 @@ cfg_if::cfg_if! {
         /// - `threads` feature enabled: `Box<dyn Fn(KernelArgs<N>) + Send + 'a>`
         /// - no feature enabled: fall back to [`SerialForKernelType`][SerialForKernelType]
         ///
-        /// Current version: no feature
+        /// **Current version**: no feature
         pub type ForKernelType<'a, const N: usize> = SerialForKernelType<'a, N>;
     }
 }

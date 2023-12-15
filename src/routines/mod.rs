@@ -72,7 +72,7 @@ cfg_if::cfg_if! {
     if #[cfg(feature = "threads")] {
         /// Parallel For statement.
         ///
-        /// Current version: `threads`
+        /// **Current version**: `threads`
         ///
         /// ### Example
         ///
@@ -126,7 +126,7 @@ cfg_if::cfg_if! {
     } else if #[cfg(feature = "rayon")] {
         /// Parallel For statement.
         ///
-        /// Current version: `rayon`
+        /// **Current version**: `rayon`
         ///
         /// ### Example
         ///
@@ -180,7 +180,7 @@ cfg_if::cfg_if! {
     } else {
         /// Parallel For statement.
         ///
-        /// Current version: no feature
+        /// **Current version**: no feature
         ///
         /// ### Example
         ///

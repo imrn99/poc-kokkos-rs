@@ -186,7 +186,7 @@ where
     /// Note that [Index] is always implemented while [IndexMut] only is when no
     /// features are enabled.
     ///
-    /// Current version: no feature
+    /// **Current version**: no feature
     pub fn set(&mut self, index: [usize; N], val: T) {
         self[index] = val;
     }
@@ -207,7 +207,7 @@ where
     /// Note that [Index] is always implemented while [IndexMut] only is when no
     /// features are enabled.
     ///
-    /// Current version: thread-safe
+    /// **Current version**: thread-safe
     pub fn set(&self, index: [usize; N], val: T) {
         self[index].store(val, Ordering::Relaxed);
     }
@@ -227,7 +227,7 @@ where
     /// Note that [Index] is always implemented while [IndexMut] only is when no
     /// features are enabled.
     ///
-    /// Current version: no feature
+    /// **Current version**: no feature
     pub fn get(&self, index: [usize; N]) -> T {
         self[index]
     }
@@ -247,7 +247,7 @@ where
     /// Note that [Index] is always implemented while [IndexMut] only is when no
     /// features are enabled.
     ///
-    /// Current version: thread-safe
+    /// **Current version**: thread-safe
     pub fn get(&self, index: [usize; N]) -> T {
         self[index].load(atomic::Ordering::Relaxed)
     }
