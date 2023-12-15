@@ -1,4 +1,4 @@
-#include "poc-kokkos-rs/include/hello.hpp"
+#include "poc-kokkos-rs/src/include/hello.hpp"
 #include "omp.h"
 
 #include <cstdio>

@@ -17,7 +17,7 @@ fn main() {
 
     cxx_build::bridge("src/lib.rs")
         .compiler(compiler)
-        .file("src/hello.cpp")
+        .file("src/cpp/hello.cpp")
         .flag_if_supported("-std=c++20")
         .flag(ompflags) // clang
         .compile("poc-cc");
@@ -36,7 +36,10 @@ fn main() {
         }
         _ => unimplemented!(),
     }
+    // main
     println!("cargo:rerun-if-changed=src/main.rs");
-    println!("cargo:rerun-if-changed=src/hello.cpp");
-    println!("cargo:rerun-if-changed=include/hello.hpp");
+    // cpp files
+    println!("cargo:rerun-if-changed=src/cpp/hello.cpp");
+    // header files
+    println!("cargo:rerun-if-changed=src/include/hello.hpp");
 }

@@ -1,11 +1,15 @@
 //! parallel statement related code
 //!
-//! This module contains code used for the implementations of parallel statements, e.g.
-//! `parallel_for`, a Kokkos specific implementation of the commonly used pattern.
-//!
-//! `parallel_for` is currently the only statement considered for implementation;
+//! This module contains code used for the implementation of parallel statements, e.g.
+//! `parallel_for`, a Kokkos specific implementation of commonly used patterns.
 //!
 //! Parameters of aforementionned statements are defined in the [`parameters`] sub-module.
+//!
+//! Dispatch code is defined in the [`dispatch`] sub-module.
+//!
+//! Currently implemented statements:
+//!
+//! - `parallel_for`
 
 pub mod dispatch;
 pub mod parameters;
@@ -26,7 +30,7 @@ pub enum StatementError {
     Dispatch(DispatchError),
     /// Error raised when parallel hierarchy isn't respected.
     InconsistentDepth,
-    /// ...
+    /// What did I mean by this?
     InconsistentExecSpace,
 }
 
@@ -44,7 +48,7 @@ impl Display for StatementError {
                 write!(f, "inconsistent depth & range policy association")
             }
             StatementError::InconsistentExecSpace => {
-                write!(f, "inconsistent depth & range policy association")
+                write!(f, "?")
             }
         }
     }
@@ -65,11 +69,41 @@ impl std::error::Error for StatementError {
 // All of this would be half as long if impl trait in type aliases was stabilized
 
 cfg_if::cfg_if! {
-    if #[cfg(any(feature = "rayon", feature = "threads", feature = "gpu"))] {
-
-        /// Parallel For statement. The `const` generic argument should
-        /// be `0`, `1`, or `2` according to its position in a nested structure
-        /// (`0` being the most outer level, `2` the most inner level).
+    if #[cfg(feature = "threads")] {
+        /// Parallel For statement.
+        ///
+        /// **Current version**: `threads`
+        ///
+        /// ### Example
+        ///
+        /// ```rust
+        /// use poc_kokkos_rs::{
+        ///     functor::KernelArgs,
+        ///     routines::{
+        ///         parallel_for,
+        ///         parameters::{ExecutionPolicy, ExecutionSpace, RangePolicy, Schedule},
+        ///     },
+        /// };
+        ///
+        /// let length: usize = 8;
+        ///
+        /// let kern = |arg: KernelArgs<1>| match arg {
+        ///         KernelArgs::Index1D(i) => {
+        ///             // body of the kernel
+        ///             println!("Hello from iteration {i}")
+        ///         },
+        ///         KernelArgs::IndexND(_) => unimplemented!(),
+        ///         KernelArgs::Handle => unimplemented!(),
+        ///     };
+        ///
+        /// let execp =  ExecutionPolicy {
+        ///         space: ExecutionSpace::DeviceCPU,
+        ///         range: RangePolicy::RangePolicy(0..length),
+        ///         schedule: Schedule::Static,
+        ///     };
+        ///
+        /// parallel_for(execp, kern).unwrap();
+        /// ```
         pub fn parallel_for<const N: usize>(
             execp: ExecutionPolicy<N>,
             func: impl Fn(KernelArgs<N>) + Send + Sync + Clone,
@@ -89,10 +123,95 @@ cfg_if::cfg_if! {
             // Ok or converts error
             res.map_err(|e| e.into())
         }
+    } else if #[cfg(feature = "rayon")] {
+        /// Parallel For statement.
+        ///
+        /// **Current version**: `rayon`
+        ///
+        /// ### Example
+        ///
+        /// ```rust
+        /// use poc_kokkos_rs::{
+        ///     functor::KernelArgs,
+        ///     routines::{
+        ///         parallel_for,
+        ///         parameters::{ExecutionPolicy, ExecutionSpace, RangePolicy, Schedule},
+        ///     },
+        /// };
+        ///
+        /// let length: usize = 8;
+        ///
+        /// let kern = |arg: KernelArgs<1>| match arg {
+        ///         KernelArgs::Index1D(i) => {
+        ///             // body of the kernel
+        ///             println!("Hello from iteration {i}")
+        ///         },
+        ///         KernelArgs::IndexND(_) => unimplemented!(),
+        ///         KernelArgs::Handle => unimplemented!(),
+        ///     };
+        ///
+        /// let execp =  ExecutionPolicy {
+        ///         space: ExecutionSpace::DeviceCPU,
+        ///         range: RangePolicy::RangePolicy(0..length),
+        ///         schedule: Schedule::Static,
+        ///     };
+        ///
+        /// parallel_for(execp, kern).unwrap();
+        /// ```
+        pub fn parallel_for<const N: usize>(
+            execp: ExecutionPolicy<N>,
+            func: impl Fn(KernelArgs<N>) + Send + Sync,
+        ) -> Result<(), StatementError> {
+            // checks...
+
+            // data prep?
+            let kernel = Box::new(func);
+
+            // dispatch
+            let res = match execp.space {
+                parameters::ExecutionSpace::Serial => dispatch::serial(execp, kernel),
+                parameters::ExecutionSpace::DeviceCPU => dispatch::cpu(execp, kernel),
+                parameters::ExecutionSpace::DeviceGPU => dispatch::gpu(execp, kernel),
+            };
+
+            // Ok or converts error
+            res.map_err(|e| e.into())
+        }
     } else {
-        /// Parallel For statement. The `const` generic argument should
-        /// be `0`, `1`, or `2` according to its position in a nested structure
-        /// (`0` being the most outer level, `2` the most inner level).
+        /// Parallel For statement.
+        ///
+        /// **Current version**: no feature
+        ///
+        /// ### Example
+        ///
+        /// ```rust
+        /// use poc_kokkos_rs::{
+        ///     functor::KernelArgs,
+        ///     routines::{
+        ///         parallel_for,
+        ///         parameters::{ExecutionPolicy, ExecutionSpace, RangePolicy, Schedule},
+        ///     },
+        /// };
+        ///
+        /// let length: usize = 8;
+        ///
+        /// let kern = |arg: KernelArgs<1>| match arg {
+        ///         KernelArgs::Index1D(i) => {
+        ///             // body of the kernel
+        ///             println!("Hello from iteration {i}")
+        ///         },
+        ///         KernelArgs::IndexND(_) => unimplemented!(),
+        ///         KernelArgs::Handle => unimplemented!(),
+        ///     };
+        ///
+        /// let execp =  ExecutionPolicy {
+        ///         space: ExecutionSpace::DeviceCPU,
+        ///         range: RangePolicy::RangePolicy(0..length),
+        ///         schedule: Schedule::Static,
+        ///     };
+        ///
+        /// parallel_for(execp, kern).unwrap();
+        /// ```
         pub fn parallel_for<const N: usize>(
             execp: ExecutionPolicy<N>,
             func: impl FnMut(KernelArgs<N>),

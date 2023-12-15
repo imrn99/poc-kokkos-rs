@@ -9,17 +9,13 @@ proof and verification of that statement.
 
 ## Scope of the Project
 
-~~The main focus of this Proof-of-Concept is the architecture and approach used by
-Kokkos for data management. While multiple targets support (Serial, [rayon][2], OpenMP)
-could be interesting, it is not the priority.~~
+The goal of this project is not to produce an entire Kokkos implementation nor to
+replicate the existing C++ library. While the current C++ source code is interesting
+to use as inspiration, the main reference is the model description. 
 
-Rudimentary data structure implementation being done, the goal is now to write a simple
-program using a `parallel_for` statement with satisfying portability as defined by Kokkos.
-
-Additionally, some features of Kokkos are not reproducible in Rust (GPU targetting, 
-templating); These create limits for the implementation that may or may not be bypassed.
-This makes limit-testing an fundamental part of the project.
-
+Additionally, because of language specific features (Rust strict compilation rules, 
+C++ templates), you can expect the underlying implementation of concepts to be 
+vastly different.
 
 ## Quickstart
 
@@ -97,16 +93,9 @@ do.
 
 ## References
 
-### View Implementation
-
-- `ndarray` Rust implementation: [link][NDARRAY]
-- Const generics documentation from The Rust Reference: [link][CONSTG]
-- `move` keyword semantic & implementation: [link][MOVE]
+- The Kokkos Wiki: [link][1]
+- `rayon` crate documentation: [link][2]
 
 
 [1]: https://kokkos.github.io/kokkos-core-wiki/index.html
 [2]: https://docs.rs/rayon/latest/rayon/
-
-[NDARRAY]: https://docs.rs/ndarray/latest/ndarray/
-[CONSTG]: https://doc.rust-lang.org/reference/items/generics.html
-[MOVE]: https://stackoverflow.com/questions/30288782/what-are-move-semantics-in-rust

@@ -3,6 +3,12 @@
 //! This module contains all code used to dispatch computational kernels
 //! onto specified devices. Note that the documentation is feature-specific when the
 //! items are, i.e. documentation is altered by enabled features.
+//!
+//! The methods desccribed in this module are not meant to be used directly, they are only
+//! building blocks for the parallel statements.
+
+#[cfg(any(doc, feature = "rayon", feature = "gpu"))]
+use crate::functor::ForKernelType;
 
 #[cfg(feature = "rayon")]
 use rayon::prelude::*;
@@ -10,7 +16,7 @@ use rayon::prelude::*;
 use std::{fmt::Display, ops::Range};
 
 use super::parameters::{ExecutionPolicy, RangePolicy};
-use crate::functor::KernelArgs;
+use crate::functor::{KernelArgs, SerialForKernelType};
 
 // enums
 
@@ -50,16 +56,13 @@ impl std::error::Error for DispatchError {
 
 /// Builds a N-depth nested loop executing a kernel using the N resulting indices.
 /// Technically, this should be replaced by a tiling function, for both serial and parallel
-/// implementations. In practice, the cost of tiling might be too high in a serial context.
-fn recursive_loop<const N: usize>(
-    ranges: &[Range<usize>; N],
-    mut kernel: Box<impl FnMut(KernelArgs<N>)>,
-) {
+/// implementations.
+fn recursive_loop<const N: usize>(ranges: &[Range<usize>; N], mut kernel: SerialForKernelType<N>) {
     // handles recursions
     fn inner<const N: usize>(
         current_depth: usize,
         ranges: &[Range<usize>; N],
-        kernel: &mut Box<impl FnMut(KernelArgs<N>)>,
+        kernel: &mut SerialForKernelType<N>,
         indices: &mut [usize; N],
     ) {
         if current_depth == N {
@@ -83,12 +86,14 @@ fn recursive_loop<const N: usize>(
 
 // serial dispatch
 
-/// Dispatch routine for serial backend.
+/// CPU dispatch routine of `for` statements. Does not depend on enabled feature(s).
 ///
-/// This also serve as the fallback CPU dispatch routine in specific cases.
+/// The dispatch function execute the kernel accordingly to the directives contained in the
+/// execution policy. The kernel signature does not vary according to enabled features as this
+/// is the invariant fallback dispatch routine.
 pub fn serial<const N: usize>(
     execp: ExecutionPolicy<N>,
-    kernel: Box<impl FnMut(KernelArgs<N>)>,
+    kernel: SerialForKernelType<N>,
 ) -> Result<(), DispatchError> {
     match execp.range {
         RangePolicy::RangePolicy(range) => {
@@ -151,12 +156,24 @@ pub fn serial<const N: usize>(
 
 cfg_if::cfg_if! {
     if #[cfg(feature = "threads")] {
-        /// Dispatch routine for CPU parallelization.
+        /// CPU dispatch routine of `for` statements. Implementation depends on enabled feature(s).
         ///
-        /// Backend-specific function for [std::thread] usage.
+        /// The dispatch function execute the kernel accordingly to the directives contained in the
+        /// execution policy. The kernel signature varies according to enabled features.
+        ///
+        /// ### Possible Kernel Signatures
+        ///
+        /// - `rayon` feature enabled: [`ForKernelType`]
+        /// - `threads` feature enabled: `Box<impl Fn(KernelArgs<N>) + Send + Sync + 'a + Clone>`
+        /// - no feature enabled: fall back to [`SerialForKernelType`]
+        ///
+        /// The `threads` implementation cannot currently use the generic [`ForKernelType`] because
+        /// of the Clone requirement.
+        ///
+        /// **Current version**: `threads`
         pub fn cpu<'a, const N: usize>(
             execp: ExecutionPolicy<N>,
-            kernel: Box<impl Fn(KernelArgs<N>) + Send + Sync + 'a + Clone>,
+            kernel: Box<impl Fn(KernelArgs<N>) + Send + Sync + 'a + Clone>, // cannot be replaced by functor type bc of Clone
         ) -> Result<(), DispatchError> {
             match execp.range {
                 RangePolicy::RangePolicy(range) => {
@@ -172,7 +189,6 @@ cfg_if::cfg_if! {
                     // use scope to avoid 'static lifetime reqs
                     std::thread::scope(|s| {
                         let handles: Vec<_> = indices.chunks(chunk_size).map(|chunk| {
-                            // rebuild the kernel from the copied raw pointer
                             s.spawn(|| chunk.iter().map(|idx_ref| KernelArgs::Index1D(*idx_ref)).for_each(kernel.clone()))
                         }).collect();
 
@@ -218,12 +234,24 @@ cfg_if::cfg_if! {
             Ok(())
         }
     } else if #[cfg(feature = "rayon")] {
-        /// Dispatch routine for CPU parallelization.
+        /// CPU dispatch routine of `for` statements. Implementation depends on enabled feature(s).
         ///
-        /// Backend-specific function for [rayon](https://docs.rs/rayon/latest/rayon/) usage.
+        /// The dispatch function execute the kernel accordingly to the directives contained in the
+        /// execution policy. The kernel signature varies according to enabled features.
+        ///
+        /// ### Possible Kernel Signatures
+        ///
+        /// - `rayon` feature enabled: [`ForKernelType`]
+        /// - `threads` feature enabled: `Box<impl Fn(KernelArgs<N>) + Send + Sync + 'a + Clone>`
+        /// - no feature enabled: fall back to [`SerialForKernelType`]
+        ///
+        /// The `threads` implementation cannot currently use the generic [`ForKernelType`] because
+        /// of the Clone requirement.
+        ///
+        /// **Current version**: `rayon`
         pub fn cpu<'a, const N: usize>(
             execp: ExecutionPolicy<N>,
-            kernel: Box<impl Fn(KernelArgs<N>) + Send + Sync + 'a + Clone>,
+            kernel: ForKernelType<N>,
         ) -> Result<(), DispatchError> {
             match execp.range {
                 RangePolicy::RangePolicy(range) => {
@@ -276,12 +304,24 @@ cfg_if::cfg_if! {
             Ok(())
         }
     } else {
-        /// Dispatch routine for CPU parallelization.
+        /// CPU dispatch routine of `for` statements. Implementation depends on enabled feature(s).
         ///
-        /// Backend-specific function that falls back to serial execution.
+        /// The dispatch function execute the kernel accordingly to the directives contained in the
+        /// execution policy. The kernel signature varies according to enabled features.
+        ///
+        /// ### Possible Kernel Signatures
+        ///
+        /// - `rayon` feature enabled: [`ForKernelType`]
+        /// - `threads` feature enabled: `Box<impl Fn(KernelArgs<N>) + Send + Sync + 'a + Clone>`
+        /// - no feature enabled: fall back to [`SerialForKernelType`]
+        ///
+        /// The `threads` implementation cannot currently use the generic [`ForKernelType`] because
+        /// of the Clone requirement.
+        ///
+        /// **Current version**: no feature
         pub fn cpu<const N: usize>(
             execp: ExecutionPolicy<N>,
-            kernel: Box<impl FnMut(KernelArgs<N>)>,
+            kernel: SerialForKernelType<N>,
         ) -> Result<(), DispatchError> {
             serial(execp, kernel)
         }
@@ -290,18 +330,18 @@ cfg_if::cfg_if! {
 
 cfg_if::cfg_if! {
     if #[cfg(feature = "gpu")] {
-        /// Dispatch routine for GPU parallelization. UNIMPLEMENTED
+        /// GPU Dispatch routine of `for` statements. UNIMPLEMENTED
         pub fn gpu<'a, const N: usize>(
-            execp: ExecutionPolicy<N>,
-            kernel: Box<impl Fn(KernelArgs<N>) + Send + Sync + 'a + Clone>,
+            _execp: ExecutionPolicy<N>,
+            _kernel: ForKernelType<N>,
         ) -> Result<(), DispatchError> {
-            serial(execp, kernel)
+            unimplemented!()
         }
     } else {
-        /// Dispatch routine for GPU parallelization. UNIMPLEMENTED
-        pub fn gpu< const N: usize>(
+        /// GPU Dispatch routine of `for` statements. UNIMPLEMENTED
+        pub fn gpu<const N: usize>(
             execp: ExecutionPolicy<N>,
-            kernel: Box<impl FnMut(KernelArgs<N>)>,
+            kernel: SerialForKernelType<N>,
         ) -> Result<(), DispatchError> {
             serial(execp, kernel)
         }
@@ -321,7 +361,7 @@ mod tests {
         };
         // fixes warnings when testing using a parallel feature
         cfg_if::cfg_if! {
-            if #[cfg(any(feature = "threads", feature = "rayon"))] {
+            if #[cfg(any(feature = "threads", feature = "rayon", feature = "gpu"))] {
                 let mat = ViewOwned::new_from_data(vec![0.0; 15], Layout::Right, [15]);
             } else {
                 let mut mat = ViewOwned::new_from_data(vec![0.0; 15], Layout::Right, [15]);
@@ -356,7 +396,7 @@ mod tests {
         };
         // fixes warnings when testing using a parallel feature
         cfg_if::cfg_if! {
-            if #[cfg(any(feature = "threads", feature = "rayon"))] {
+            if #[cfg(any(feature = "threads", feature = "rayon", feature = "gpu"))] {
                 let mat = ViewOwned::new_from_data(vec![0.0; 150], Layout::Right, [10, 15]);
             } else {
                 let mut mat = ViewOwned::new_from_data(vec![0.0; 150], Layout::Right, [10, 15]);
@@ -392,7 +432,7 @@ mod tests {
 
         // fixes warnings when testing using a parallel feature
         cfg_if::cfg_if! {
-            if #[cfg(any(feature = "threads", feature = "rayon"))] {
+            if #[cfg(any(feature = "threads", feature = "rayon", feature = "gpu"))] {
                 let mat = ViewOwned::new_from_data(vec![0.0; 15], Layout::Right, [15]);
             } else {
                 let mut mat = ViewOwned::new_from_data(vec![0.0; 15], Layout::Right, [15]);
