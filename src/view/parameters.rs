@@ -75,17 +75,17 @@ impl<T: DataTraits> ViewData<T> {
     }
 
     #[cfg(not(any(feature = "rayon", feature = "threads", feature = "gpu")))]
-    pub fn get(&self, idx: isize) -> &T {
-        assert!((idx as usize) < self.size);
-        unsafe { self.ptr.offset(idx).as_ref().unwrap() }
+    pub fn get(&self, idx: usize) -> &T {
+        assert!(idx < self.size);
+        unsafe { self.ptr.add(idx).as_ref().unwrap() }
     }
 
     #[cfg(any(feature = "rayon", feature = "threads", feature = "gpu"))]
-    pub fn get(&self, idx: isize) -> T {
-        assert!((idx as usize) < self.size);
+    pub fn get(&self, idx: usize) -> T {
+        assert!(idx < self.size);
         unsafe {
             self.ptr
-                .offset(idx)
+                .add(idx)
                 .as_ref()
                 .unwrap()
                 .load(atomic::Ordering::Relaxed)
@@ -93,21 +93,21 @@ impl<T: DataTraits> ViewData<T> {
     }
 
     #[cfg(not(any(feature = "rayon", feature = "threads", feature = "gpu")))]
-    pub fn set(&self, idx: isize, val: T) {
-        assert!((idx as usize) < self.size);
-        let targ = unsafe { self.ptr.offset(idx) };
+    pub fn set(&self, idx: usize, val: T) {
+        assert!(idx < self.size);
+        let targ = unsafe { self.ptr.add(idx) };
         unsafe { *targ = val };
     }
 
     #[cfg(any(feature = "rayon", feature = "threads", feature = "gpu"))]
-    pub fn set(&self, idx: isize, val: T) {
-        assert!((idx as usize) < self.size);
-        let targ = unsafe { self.ptr.offset(idx) };
+    pub fn set(&self, idx: usize, val: T) {
+        assert!(idx < self.size);
+        let targ = unsafe { self.ptr.add(idx) };
         unsafe { (*targ).store(val, atomic::Ordering::Relaxed) };
     }
 
     pub fn fill(&mut self, val: T) {
-        for idx in 0..self.size as isize {
+        for idx in 0..self.size {
             self.set(idx, val);
         }
     }
