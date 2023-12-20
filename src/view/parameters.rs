@@ -52,51 +52,6 @@ pub type InnerDataType<T> = T;
 /// **Current version**: thread-safe
 pub type InnerDataType<T> = Atomic<T>;
 
-#[derive(Debug)]
-/// Enum used to identify the type of data the view is holding.
-///
-/// This should eventually be removed. See the [view][crate::view] module documentation
-/// for more information.
-///
-/// The policy used to implement the [PartialEq] trait is based on Kokkos'
-/// [`equal` algorithm](https://kokkos.github.io/kokkos-core-wiki/API/algorithms/std-algorithms/all/StdEqual.html).
-/// Essentially, it corresponds to equality by reference instead of equality by value.
-pub enum DataType<'a, T>
-where
-    T: DataTraits,
-{
-    /// The view owns the data.
-    Owned(Vec<InnerDataType<T>>),
-    /// The view borrows the data and can only read it.
-    Borrowed(&'a [InnerDataType<T>]),
-    /// The view borrows the data and can both read and modify it.
-    MutBorrowed(&'a mut [InnerDataType<T>]),
-}
-
-impl<'a, T> PartialEq for DataType<'a, T>
-where
-    T: DataTraits,
-{
-    fn eq(&self, other: &Self) -> bool {
-        match (self, other) {
-            // are the deref operations necessary?
-            // this one is technically necessary because self==self should return true
-            (Self::Owned(l0), Self::Owned(r0)) => (*l0).as_ptr() == (*r0).as_ptr(),
-            // compare pointers
-            // deref Owned only once, twice the others
-            (Self::Owned(l0), Self::Borrowed(r0)) => (*l0).as_ptr() == (**r0).as_ptr(),
-            (Self::Owned(l0), Self::MutBorrowed(r0)) => (*l0).as_ptr() == (**r0).as_ptr(),
-            (Self::Borrowed(l0), Self::Owned(r0)) => (**l0).as_ptr() == (*r0).as_ptr(),
-            (Self::MutBorrowed(l0), Self::Owned(r0)) => (**l0).as_ptr() == (*r0).as_ptr(),
-
-            (Self::Borrowed(l0), Self::Borrowed(r0)) => (**l0).as_ptr() == (**r0).as_ptr(),
-            (Self::Borrowed(l0), Self::MutBorrowed(r0)) => (**l0).as_ptr() == (**r0).as_ptr(),
-            (Self::MutBorrowed(l0), Self::MutBorrowed(r0)) => (**l0).as_ptr() == (**r0).as_ptr(),
-            (Self::MutBorrowed(l0), Self::Borrowed(r0)) => (**l0).as_ptr() == (**r0).as_ptr(),
-        }
-    }
-}
-
 /// Enum used to represent data layout. Struct enums is used in order to increase
 /// readability.
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
