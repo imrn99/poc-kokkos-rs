@@ -252,63 +252,6 @@ where
         self[index].load(atomic::Ordering::Relaxed)
     }
 
-    // ~~~~~~~~ Mirrors
-
-    /// Create a new View mirroring `self`, i.e. referencing the same data. This mirror
-    /// is always immutable, but it inner values might still be writable if they are
-    /// atomic types.
-    ///
-    /// Note that mirrors currently can only be created from the "original" view,
-    /// i.e. the view owning the data.
-    pub fn create_mirror<'b>(&'a self) -> Result<ViewRO<'b, N, T>, ViewError>
-    where
-        'a: 'b, // 'a outlives 'b
-    {
-        let inner = if let DataType::Owned(v) = &self.data {
-            v
-        } else {
-            return Err(ViewError::DoubleMirroring(
-                "Cannot create a mirror from a non-data-owning View",
-            ));
-        };
-
-        Ok(Self {
-            data: DataType::Borrowed(inner),
-            layout: self.layout,
-            dim: self.dim,
-            stride: self.stride,
-        })
-    }
-
-    #[cfg(not(any(feature = "rayon", feature = "threads", feature = "gpu")))]
-    /// Create a new View mirroring `self`, i.e. referencing the same data. This mirror
-    /// uses a mutable reference, hence the serial-only definition
-    ///
-    /// Note that mirrors currently can only be created from the "original" view,
-    /// i.e. the view owning the data.
-    ///
-    /// Only defined when no feature are enabled since all interfaces should be immutable
-    /// otherwise.
-    pub fn create_mutable_mirror<'b>(&'a mut self) -> Result<ViewRW<'b, N, T>, ViewError>
-    where
-        'a: 'b, // 'a outlives 'b
-    {
-        let inner = if let DataType::Owned(v) = &mut self.data {
-            v
-        } else {
-            return Err(ViewError::DoubleMirroring(
-                "Cannot create a mirror from a non-data-owning View",
-            ));
-        };
-
-        Ok(Self {
-            data: DataType::MutBorrowed(inner),
-            layout: self.layout,
-            dim: self.dim,
-            stride: self.stride,
-        })
-    }
-
     // ~~~~~~~~ Convenience
 
     #[cfg(all(
@@ -405,11 +348,3 @@ where
 
 /// View type owning the data it yields access to, i.e. "original" view.
 pub type ViewOwned<'a, const N: usize, T> = View<'a, N, T>;
-
-/// View type owning a read-only borrow to the data it yields access to, i.e. a
-/// read-only mirror.
-pub type ViewRO<'a, const N: usize, T> = View<'a, N, T>;
-
-/// View type owning a mutable borrow to the data it yields access to, i.e. a
-/// read-write mirror.
-pub type ViewRW<'a, const N: usize, T> = View<'a, N, T>;
