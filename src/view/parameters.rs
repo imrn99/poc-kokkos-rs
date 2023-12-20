@@ -70,18 +70,46 @@ where
 
 impl<T: DataTraits> ViewData<T> {
     pub fn new(size: usize, memspace: MemorySpace) -> Self {
-        let (ptr, lyt) = allocate_block::<T>(size, memspace).unwrap();
+        let (ptr, lyt) = allocate_block::<InnerDataType<T>>(size, memspace).unwrap();
         Self { ptr, size, lyt }
     }
 
+    #[cfg(not(any(feature = "rayon", feature = "threads", feature = "gpu")))]
     pub fn get(&self, idx: isize) -> &T {
         assert!((idx as usize) < self.size);
         unsafe { self.ptr.offset(idx).as_ref().unwrap() }
     }
 
-    pub fn get_mut(&mut self, idx: isize) -> &T {
+    #[cfg(any(feature = "rayon", feature = "threads", feature = "gpu"))]
+    pub fn get(&self, idx: isize) -> T {
         assert!((idx as usize) < self.size);
-        unsafe { self.ptr.offset(idx).as_mut().unwrap() }
+        unsafe {
+            self.ptr
+                .offset(idx)
+                .as_ref()
+                .unwrap()
+                .load(atomic::Ordering::Relaxed)
+        }
+    }
+
+    #[cfg(not(any(feature = "rayon", feature = "threads", feature = "gpu")))]
+    pub fn set(&self, idx: isize, val: T) {
+        assert!((idx as usize) < self.size);
+        let targ = unsafe { self.ptr.offset(idx) };
+        unsafe { *targ = val };
+    }
+
+    #[cfg(any(feature = "rayon", feature = "threads", feature = "gpu"))]
+    pub fn set(&self, idx: isize, val: T) {
+        assert!((idx as usize) < self.size);
+        let targ = unsafe { self.ptr.offset(idx) };
+        unsafe { (*targ).store(val, atomic::Ordering::Relaxed) };
+    }
+
+    pub fn fill(&mut self, val: T) {
+        for idx in 0..self.size as isize {
+            self.set(idx, val);
+        }
     }
 }
 
