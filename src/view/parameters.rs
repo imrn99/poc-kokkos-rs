@@ -57,7 +57,7 @@ pub type InnerDataType<T> = Atomic<T>;
 /// Enum used to represent data layout. Struct enums is used in order to increase
 /// readability.
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
-pub enum Layout<const N: usize> {
+pub enum MemoryLayout<const N: usize> {
     /// Highest stride for the first index, decreasing stride as index increases.
     /// Exact stride for each index can be computed from dimensions at view initialization.
     #[default]
@@ -70,10 +70,10 @@ pub enum Layout<const N: usize> {
 }
 
 /// Compute correct strides of each index using dimensions and specified layout.
-pub fn compute_stride<const N: usize>(dim: &[usize; N], layout: &Layout<N>) -> [usize; N] {
+pub fn compute_stride<const N: usize>(dim: &[usize; N], layout: &MemoryLayout<N>) -> [usize; N] {
     assert_eq!(N.clamp(1, MAX_VIEW_DEPTH), N); // 1 <= N <= MAX_N
     match layout {
-        Layout::Right => {
+        MemoryLayout::Right => {
             let mut stride = [1; N];
 
             let mut tmp: usize = 1;
@@ -85,7 +85,7 @@ pub fn compute_stride<const N: usize>(dim: &[usize; N], layout: &Layout<N>) -> [
             stride.reverse();
             stride
         }
-        Layout::Left => {
+        MemoryLayout::Left => {
             let mut stride = [1; N];
 
             let mut tmp: usize = 1;
@@ -96,7 +96,7 @@ pub fn compute_stride<const N: usize>(dim: &[usize; N], layout: &Layout<N>) -> [
 
             stride
         }
-        Layout::Stride { s } => *s,
+        MemoryLayout::Stride { s } => *s,
     }
 }
 
@@ -118,7 +118,7 @@ mod tests {
         // dim = [n0, n1, n2, n3]
         let dim = [3, 4, 5, 6];
 
-        let cmp_stride = compute_stride(&dim, &Layout::Right);
+        let cmp_stride = compute_stride(&dim, &MemoryLayout::Right);
         // n3 * n2 * n1, n3 * n2, n3, 1
         let ref_stride: [usize; 4] = [6 * 5 * 4, 6 * 5, 6, 1];
 
@@ -130,7 +130,7 @@ mod tests {
         // dim = [n0, n1, n2, n3]
         let dim = [3, 4, 5, 6];
 
-        let cmp_stride = compute_stride(&dim, &Layout::Left);
+        let cmp_stride = compute_stride(&dim, &MemoryLayout::Left);
         // 1, n0, n0 * n1, n0 * n1 * n2
         let ref_stride: [usize; 4] = [1, 3, 3 * 4, 3 * 4 * 5];
 
@@ -142,9 +142,9 @@ mod tests {
         // 1d view (vector) of length 1
         let dim: [usize; 1] = [8];
         let ref_stride: [usize; 1] = [1];
-        let mut cmp_stride = compute_stride(&dim, &Layout::Right);
+        let mut cmp_stride = compute_stride(&dim, &MemoryLayout::Right);
         assert_eq!(ref_stride, cmp_stride);
-        cmp_stride = compute_stride(&dim, &Layout::Left);
+        cmp_stride = compute_stride(&dim, &MemoryLayout::Left);
         assert_eq!(ref_stride, cmp_stride);
     }
 }

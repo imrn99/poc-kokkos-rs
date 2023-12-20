@@ -5,7 +5,7 @@ use poc_kokkos_rs::{
         parallel_for,
         parameters::{ExecutionPolicy, ExecutionSpace, RangePolicy, Schedule},
     },
-    view::{parameters::Layout, View},
+    view::{parameters::MemoryLayout, View},
 };
 use rand::{
     distributions::{Distribution, Uniform},
@@ -16,9 +16,9 @@ use rand::{
 // Serial GEMV
 fn f1(aa_init: Vec<f64>, x_init: Vec<f64>, y_init: Vec<f64>, alpha: f64, beta: f64) {
     let length = x_init.len();
-    let mut aa = View::new_from_data(aa_init, Layout::Right, [length, length]);
-    let mut x = View::new_from_data(x_init, Layout::Right, [length]);
-    let mut y = View::new_from_data(y_init, Layout::Right, [length]);
+    let mut aa = View::new_from_data(aa_init, MemoryLayout::Right, [length, length]);
+    let mut x = View::new_from_data(x_init, MemoryLayout::Right, [length]);
+    let mut y = View::new_from_data(y_init, MemoryLayout::Right, [length]);
     black_box(&mut aa);
     black_box(&mut x);
     black_box(&mut y);
@@ -46,9 +46,9 @@ fn f1(aa_init: Vec<f64>, x_init: Vec<f64>, y_init: Vec<f64>, alpha: f64, beta: f
 // DeviceCPU GEMV
 fn f2(aa_init: Vec<f64>, x_init: Vec<f64>, y_init: Vec<f64>, alpha: f64, beta: f64) {
     let length = x_init.len();
-    let mut aa = View::new_from_data(aa_init, Layout::Right, [length, length]);
-    let mut x = View::new_from_data(x_init, Layout::Right, [length]);
-    let mut y = View::new_from_data(y_init, Layout::Right, [length]);
+    let mut aa = View::new_from_data(aa_init, MemoryLayout::Right, [length, length]);
+    let mut x = View::new_from_data(x_init, MemoryLayout::Right, [length]);
+    let mut y = View::new_from_data(y_init, MemoryLayout::Right, [length]);
     black_box(&mut aa);
     black_box(&mut x);
     black_box(&mut y);

@@ -1,5 +1,5 @@
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
-use poc_kokkos_rs::view::{parameters::Layout, View};
+use poc_kokkos_rs::view::{parameters::MemoryLayout, View};
 use rand::prelude::*;
 
 // this bench is used to evaluate the cost of accessing views' data
@@ -18,7 +18,7 @@ fn f1(length: usize, indices: &[usize]) {
 
 // 1D view access
 fn f1_b(length: usize, indices: &[usize]) {
-    let v_y: View<1, f64> = View::new_from_data(vec![0.0; length], Layout::Right, [length]);
+    let v_y: View<1, f64> = View::new_from_data(vec![0.0; length], MemoryLayout::Right, [length]);
     let idx = &indices[0..length];
 
     idx.iter().for_each(|i| {
@@ -40,8 +40,11 @@ fn f2(length: usize, indices: &[(usize, usize)]) {
 
 // 2D view access
 fn f2_b(length: usize, indices: &[(usize, usize)]) {
-    let v_y: View<2, f64> =
-        View::new_from_data(vec![0.0; length * length], Layout::Right, [length, length]);
+    let v_y: View<2, f64> = View::new_from_data(
+        vec![0.0; length * length],
+        MemoryLayout::Right,
+        [length, length],
+    );
     let idx = &indices[0..length];
 
     idx.iter().for_each(|(i, j)| {
@@ -72,7 +75,7 @@ fn f3(length: usize, indices: &[(usize, usize, usize)]) {
 fn f3_b(length: usize, indices: &[(usize, usize, usize)]) {
     let v_y: View<3, f64> = View::new_from_data(
         vec![0.0; length * length * length],
-        Layout::Right,
+        MemoryLayout::Right,
         [length, length, length],
     );
     let idx = &indices[0..length];

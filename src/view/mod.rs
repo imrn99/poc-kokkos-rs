@@ -16,12 +16,12 @@
 //! Initialize and fill a 2D matrix:
 //! ```rust
 //! use poc_kokkos_rs::view::{
-//!     parameters::Layout,
+//!     parameters::MemoryLayout,
 //!     View,
 //! };
 //!
 //! let mut viewA: View<2, f64> = View::new(
-//!         Layout::Right, // see parameters & Kokkos doc
+//!         MemoryLayout::Right, // see parameters & Kokkos doc
 //!         [3, 5],        // 3 rows, 5 columns
 //!     );
 //!
@@ -45,7 +45,7 @@ use atomic::{Atomic, Ordering};
 #[cfg(any(doc, not(any(feature = "rayon", feature = "threads", feature = "gpu"))))]
 use std::ops::IndexMut;
 
-use self::parameters::{compute_stride, DataTraits, InnerDataType, Layout};
+use self::parameters::{compute_stride, DataTraits, InnerDataType, MemoryLayout};
 use std::{fmt::Debug, ops::Index};
 
 #[derive(Debug)]
@@ -70,7 +70,7 @@ where
     /// (`ReadOnly`) or a mutable reference (`ReadWrite`).
     pub data: Vec<InnerDataType<T>>,
     /// Memory layout of the view. Refer to Kokkos documentation for more information.
-    pub layout: Layout<N>,
+    pub layout: MemoryLayout<N>,
     /// Dimensions of the data represented by the view. The view can:
     /// - be a vector (1 dimension)
     /// - be a multi-dimensionnal array (up to 8 dimensions)
@@ -78,7 +78,7 @@ where
     /// is not directly supported at the moment.
     pub dim: [usize; N],
     /// Stride between each element of a given dimension. Computed automatically for
-    /// [Layout::Left] and [Layout::Right].
+    /// [MemoryLayout::Left] and [MemoryLayout::Right].
     pub stride: [usize; N],
 }
 
@@ -89,7 +89,7 @@ where
     T: DataTraits, // fair assumption imo
 {
     /// Constructor used to create owned views. See dedicated methods for others.
-    pub fn new(layout: Layout<N>, dim: [usize; N]) -> Self {
+    pub fn new(layout: MemoryLayout<N>, dim: [usize; N]) -> Self {
         // compute stride & capacity
         let stride = compute_stride(&dim, &layout);
         let capacity: usize = dim.iter().product();
@@ -104,7 +104,7 @@ where
     }
 
     /// Constructor used to create owned views. See dedicated methods for others.
-    pub fn new_from_data(data: Vec<T>, layout: Layout<N>, dim: [usize; N]) -> Self {
+    pub fn new_from_data(data: Vec<T>, layout: MemoryLayout<N>, dim: [usize; N]) -> Self {
         // compute stride if necessary
         let stride = compute_stride(&dim, &layout);
 
@@ -129,7 +129,7 @@ where
     T: DataTraits, // fair assumption imo
 {
     /// Constructor used to create owned views. See dedicated methods for others.
-    pub fn new(layout: Layout<N>, dim: [usize; N]) -> Self {
+    pub fn new(layout: MemoryLayout<N>, dim: [usize; N]) -> Self {
         // compute stride & capacity
         let stride = compute_stride(&dim, &layout);
         let capacity: usize = dim.iter().product();
@@ -144,7 +144,7 @@ where
     }
 
     /// Constructor used to create owned views. See dedicated methods for others.
-    pub fn new_from_data(data: Vec<T>, layout: Layout<N>, dim: [usize; N]) -> Self {
+    pub fn new_from_data(data: Vec<T>, layout: MemoryLayout<N>, dim: [usize; N]) -> Self {
         // compute stride if necessary
         let stride = compute_stride(&dim, &layout);
 

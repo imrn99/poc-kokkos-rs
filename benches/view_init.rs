@@ -1,5 +1,5 @@
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
-use poc_kokkos_rs::view::{parameters::Layout, View};
+use poc_kokkos_rs::view::{parameters::MemoryLayout, View};
 
 // this bench is used to evaluate the cost of creating views
 
@@ -19,7 +19,7 @@ fn f1_b(size: u32) {
     let length = 2_usize.pow(size);
     for _ in 0..1000 {
         let y: Vec<f64> = vec![0.0; length];
-        let v_y: View<1, f64> = View::new_from_data(y, Layout::Right, [length]);
+        let v_y: View<1, f64> = View::new_from_data(y, MemoryLayout::Right, [length]);
         black_box(v_y);
     }
 }
@@ -28,7 +28,8 @@ fn f1_b(size: u32) {
 fn f1_bb(size: u32) {
     let length = 2_usize.pow(size);
     for _ in 0..1000 {
-        let v_y: View<1, f64> = View::new_from_data(vec![0.0; length], Layout::Right, [length]);
+        let v_y: View<1, f64> =
+            View::new_from_data(vec![0.0; length], MemoryLayout::Right, [length]);
         black_box(v_y);
     }
 }
@@ -37,7 +38,7 @@ fn f1_bb(size: u32) {
 fn f1_bbb(size: u32) {
     let length = 2_usize.pow(size);
     for _ in 0..1000 {
-        let v_y: View<1, f64> = View::new(Layout::Right, [length]);
+        let v_y: View<1, f64> = View::new(MemoryLayout::Right, [length]);
         black_box(v_y);
     }
 }
@@ -58,7 +59,7 @@ fn f2_b(size: u32) {
     let length = 2_usize.pow(size);
     for _ in 0..100 {
         let y: Vec<f64> = vec![0.0; length * length];
-        let v_y: View<2, f64> = View::new_from_data(y, Layout::Right, [length, length]);
+        let v_y: View<2, f64> = View::new_from_data(y, MemoryLayout::Right, [length, length]);
         black_box(v_y);
     }
 }
@@ -67,8 +68,11 @@ fn f2_b(size: u32) {
 fn f2_bb(size: u32) {
     let length = 2_usize.pow(size);
     for _ in 0..100 {
-        let v_y: View<2, f64> =
-            View::new_from_data(vec![0.0; length * length], Layout::Right, [length, length]);
+        let v_y: View<2, f64> = View::new_from_data(
+            vec![0.0; length * length],
+            MemoryLayout::Right,
+            [length, length],
+        );
         black_box(v_y);
     }
 }
@@ -77,7 +81,7 @@ fn f2_bb(size: u32) {
 fn f2_bbb(size: u32) {
     let length = 2_usize.pow(size);
     for _ in 0..100 {
-        let v_y: View<2, f64> = View::new(Layout::Right, [length, length]);
+        let v_y: View<2, f64> = View::new(MemoryLayout::Right, [length, length]);
         black_box(v_y);
     }
 }
