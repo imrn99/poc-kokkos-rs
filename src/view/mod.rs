@@ -53,6 +53,7 @@ use std::{fmt::Debug, ops::Index};
 ///
 /// In all variants, the internal value is a description of the error.
 pub enum ViewError<'a> {
+    Allocation(&'a str),
     ValueError(&'a str),
     DoubleMirroring(&'a str),
 }

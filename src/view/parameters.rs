@@ -12,10 +12,15 @@
 //! - Memory space
 //! - Memory traits
 
-use std::fmt::Debug;
+use std::{
+    alloc::{alloc, Layout},
+    fmt::Debug,
+};
 
 #[cfg(any(feature = "rayon", feature = "threads", feature = "gpu"))]
 use atomic::Atomic;
+
+use super::ViewError;
 
 /// Maximum possible depth (i.e. number of dimensions) for a view.
 pub const MAX_VIEW_DEPTH: usize = 8;
@@ -103,8 +108,47 @@ pub fn compute_stride<const N: usize>(dim: &[usize; N], layout: &MemoryLayout<N>
 // ~~~~~~~~~ Memory space ~~~~~~~~~
 
 pub enum MemorySpace {
-    Host,
-    Device,
+    CPU,
+    GPU,
+}
+
+pub fn allocate_block<'a, T>(
+    size: usize,
+    memspace: MemorySpace,
+) -> Result<(*mut T, Layout), ViewError<'a>> {
+    // this is a required check to use the layout obtained below in the alloc()
+    assert_ne!(size, 0);
+    let res = Layout::array::<T>(size);
+    match res {
+        Ok(layout) => {
+            // the idea here is that we can use one allocator or the other
+            // according to the specified memory space.
+            // the Allocator trait is not yet stabilized though, so no
+            // device-specific allocators are implementable atm (1.74.1)
+            match memspace {
+                MemorySpace::CPU => {
+                    let ptr = unsafe { alloc(layout) };
+                    if ptr.is_null() {
+                        return Err(ViewError::Allocation(
+                            "OOM / mismatch allocator's size or alignment constraints",
+                        ));
+                    }
+                    Ok((ptr as *mut T, layout)) // need to return both for deallocation later
+                }
+                MemorySpace::GPU => {
+                    unimplemented!()
+                }
+            }
+        }
+        Err(_) => {
+            // this happens "on arithmetic overflow"
+            // or "when the total size would exceed isize::MAX"
+            // according to std::alloc::Layout::array documentation
+            Err(ViewError::Allocation(
+                "arithmetic overflow / total size > isize::MAX",
+            ))
+        }
+    }
 }
 
 // ~~~~~~~~~ Tests ~~~~~~~~~
