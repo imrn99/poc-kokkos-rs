@@ -52,6 +52,8 @@ pub type InnerDataType<T> = T;
 /// **Current version**: thread-safe
 pub type InnerDataType<T> = Atomic<T>;
 
+// ~~~~~~~~~ Layouts ~~~~~~~~~
+
 /// Enum used to represent data layout. Struct enums is used in order to increase
 /// readability.
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
@@ -97,6 +99,15 @@ pub fn compute_stride<const N: usize>(dim: &[usize; N], layout: &Layout<N>) -> [
         Layout::Stride { s } => *s,
     }
 }
+
+// ~~~~~~~~~ Memory space ~~~~~~~~~
+
+pub enum MemorySpace {
+    Host,
+    Device,
+}
+
+// ~~~~~~~~~ Tests ~~~~~~~~~
 
 #[cfg(test)]
 mod tests {
