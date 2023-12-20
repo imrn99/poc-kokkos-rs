@@ -22,10 +22,10 @@
 //! ```rust
 //! use poc_kokkos_rs::view::{
 //!     parameters::Layout,
-//!     ViewOwned,
+//!     View,
 //! };
 //!
-//! let mut viewA: ViewOwned<'_, 2, f64> = ViewOwned::new(
+//! let mut viewA: View<'_, 2, f64> = View::new(
 //!         Layout::Right, // see parameters & Kokkos doc
 //!         [3, 5],        // 3 rows, 5 columns
 //!     );
@@ -345,6 +345,3 @@ where
         }
     }
 }
-
-/// View type owning the data it yields access to, i.e. "original" view.
-pub type ViewOwned<'a, const N: usize, T> = View<'a, N, T>;

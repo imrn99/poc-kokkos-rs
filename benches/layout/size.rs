@@ -5,7 +5,7 @@ use poc_kokkos_rs::{
         parallel_for,
         parameters::{ExecutionPolicy, ExecutionSpace, RangePolicy, Schedule},
     },
-    view::{parameters::Layout, ViewOwned},
+    view::{parameters::Layout, View},
 };
 use rand::{
     distributions::{Distribution, Uniform},
@@ -27,9 +27,9 @@ fn f1(
     // best case layout:
     // iterate on lines -> line-major layout   (Right)
     // iterate on rows  -> column-major layout (Left)
-    let mut aa = ViewOwned::new_from_data(aa_init, Layout::Right, [length, length]);
-    let mut bb = ViewOwned::new_from_data(bb_init, Layout::Right, [length, length]);
-    let mut cc = ViewOwned::new_from_data(cc_init, Layout::Right, [length, length]);
+    let mut aa = View::new_from_data(aa_init, Layout::Right, [length, length]);
+    let mut bb = View::new_from_data(bb_init, Layout::Right, [length, length]);
+    let mut cc = View::new_from_data(cc_init, Layout::Right, [length, length]);
     black_box(&mut aa);
     black_box(&mut bb);
     black_box(&mut cc);
@@ -68,9 +68,9 @@ fn f2(
     alpha: FloatType,
     beta: FloatType,
 ) {
-    let mut aa = ViewOwned::new_from_data(aa_init, Layout::Right, [length, length]);
-    let mut bb = ViewOwned::new_from_data(bb_init, Layout::Left, [length, length]);
-    let mut cc = ViewOwned::new_from_data(cc_init, Layout::Right, [length, length]);
+    let mut aa = View::new_from_data(aa_init, Layout::Right, [length, length]);
+    let mut bb = View::new_from_data(bb_init, Layout::Left, [length, length]);
+    let mut cc = View::new_from_data(cc_init, Layout::Right, [length, length]);
     black_box(&mut aa);
     black_box(&mut bb);
     black_box(&mut cc);
