@@ -285,6 +285,25 @@ where
     }
 }
 
+/// The policy used to implement the [PartialEq] trait is based on Kokkos'
+/// [`equal` algorithm](https://kokkos.github.io/kokkos-core-wiki/API/algorithms/std-algorithms/all/StdEqual.html).
+/// Essentially, it corresponds to equality by reference instead of equality by value.
+impl<const N: usize, T> PartialEq for View<N, T>
+where
+    T: DataTraits,
+{
+    fn eq(&self, other: &Self) -> bool {
+        // kokkos implements equality by reference
+        // i.e. two views are equal if they reference
+        // the same memory space.
+        self.data.as_ptr() == other.data.as_ptr()
+        // meta data just needs strict equality
+            && self.layout == other.layout
+            && self.dim == other.dim
+            && self.stride == other.stride
+    }
+}
+
 /// **Read-only access is always implemented.**
 impl<const N: usize, T> Index<[usize; N]> for View<N, T>
 where
