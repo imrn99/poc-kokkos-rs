@@ -65,7 +65,7 @@ pub enum ViewError<'a> {
 #[derive(Debug, PartialEq)]
 /// Common structure used as the backend of all `View` types. The main differences between
 /// usable types is the type of the `data` field.
-pub struct ViewBase<'a, const N: usize, T>
+pub struct View<'a, const N: usize, T>
 where
     T: DataTraits,
 {
@@ -87,7 +87,7 @@ where
 
 #[cfg(not(any(feature = "rayon", feature = "threads", feature = "gpu")))]
 // ~~~~~~~~ Constructors
-impl<'a, const N: usize, T> ViewBase<'a, N, T>
+impl<'a, const N: usize, T> View<'a, N, T>
 where
     T: DataTraits, // fair assumption imo
 {
@@ -127,7 +127,7 @@ where
 
 #[cfg(any(feature = "rayon", feature = "threads", feature = "gpu"))]
 // ~~~~~~~~ Constructors
-impl<'a, const N: usize, T> ViewBase<'a, N, T>
+impl<'a, const N: usize, T> View<'a, N, T>
 where
     T: DataTraits, // fair assumption imo
 {
@@ -166,7 +166,7 @@ where
 }
 
 // ~~~~~~~~ Uniform writing interface across all features
-impl<'a, const N: usize, T> ViewBase<'a, N, T>
+impl<'a, const N: usize, T> View<'a, N, T>
 where
     T: DataTraits,
 {
@@ -356,7 +356,7 @@ where
 }
 
 /// **Read-only access is always implemented.**
-impl<'a, const N: usize, T> Index<[usize; N]> for ViewBase<'a, N, T>
+impl<'a, const N: usize, T> Index<[usize; N]> for View<'a, N, T>
 where
     T: DataTraits,
 {
@@ -383,7 +383,7 @@ where
 
 #[cfg(not(any(feature = "rayon", feature = "threads", feature = "gpu")))]
 /// **Read-write access is only implemented when no parallel features are enabled.**
-impl<'a, const N: usize, T> IndexMut<[usize; N]> for ViewBase<'a, N, T>
+impl<'a, const N: usize, T> IndexMut<[usize; N]> for View<'a, N, T>
 where
     T: DataTraits,
 {
@@ -404,12 +404,12 @@ where
 }
 
 /// View type owning the data it yields access to, i.e. "original" view.
-pub type ViewOwned<'a, const N: usize, T> = ViewBase<'a, N, T>;
+pub type ViewOwned<'a, const N: usize, T> = View<'a, N, T>;
 
 /// View type owning a read-only borrow to the data it yields access to, i.e. a
 /// read-only mirror.
-pub type ViewRO<'a, const N: usize, T> = ViewBase<'a, N, T>;
+pub type ViewRO<'a, const N: usize, T> = View<'a, N, T>;
 
 /// View type owning a mutable borrow to the data it yields access to, i.e. a
 /// read-write mirror.
-pub type ViewRW<'a, const N: usize, T> = ViewBase<'a, N, T>;
+pub type ViewRW<'a, const N: usize, T> = View<'a, N, T>;
