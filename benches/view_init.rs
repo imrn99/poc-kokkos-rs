@@ -19,7 +19,7 @@ fn f1_b(size: u32) {
     let length = 2_usize.pow(size);
     for _ in 0..1000 {
         let y: Vec<f64> = vec![0.0; length];
-        let v_y: View<'_, 1, f64> = View::new_from_data(y, Layout::Right, [length]);
+        let v_y: View<1, f64> = View::new_from_data(y, Layout::Right, [length]);
         black_box(v_y);
     }
 }
@@ -28,7 +28,7 @@ fn f1_b(size: u32) {
 fn f1_bb(size: u32) {
     let length = 2_usize.pow(size);
     for _ in 0..1000 {
-        let v_y: View<'_, 1, f64> = View::new_from_data(vec![0.0; length], Layout::Right, [length]);
+        let v_y: View<1, f64> = View::new_from_data(vec![0.0; length], Layout::Right, [length]);
         black_box(v_y);
     }
 }
@@ -37,7 +37,7 @@ fn f1_bb(size: u32) {
 fn f1_bbb(size: u32) {
     let length = 2_usize.pow(size);
     for _ in 0..1000 {
-        let v_y: View<'_, 1, f64> = View::new(Layout::Right, [length]);
+        let v_y: View<1, f64> = View::new(Layout::Right, [length]);
         black_box(v_y);
     }
 }
@@ -58,7 +58,7 @@ fn f2_b(size: u32) {
     let length = 2_usize.pow(size);
     for _ in 0..100 {
         let y: Vec<f64> = vec![0.0; length * length];
-        let v_y: View<'_, 2, f64> = View::new_from_data(y, Layout::Right, [length, length]);
+        let v_y: View<2, f64> = View::new_from_data(y, Layout::Right, [length, length]);
         black_box(v_y);
     }
 }
@@ -67,7 +67,7 @@ fn f2_b(size: u32) {
 fn f2_bb(size: u32) {
     let length = 2_usize.pow(size);
     for _ in 0..100 {
-        let v_y: View<'_, 2, f64> =
+        let v_y: View<2, f64> =
             View::new_from_data(vec![0.0; length * length], Layout::Right, [length, length]);
         black_box(v_y);
     }
@@ -77,7 +77,7 @@ fn f2_bb(size: u32) {
 fn f2_bbb(size: u32) {
     let length = 2_usize.pow(size);
     for _ in 0..100 {
-        let v_y: View<'_, 2, f64> = View::new(Layout::Right, [length, length]);
+        let v_y: View<2, f64> = View::new(Layout::Right, [length, length]);
         black_box(v_y);
     }
 }

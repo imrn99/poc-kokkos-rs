@@ -20,7 +20,7 @@
 //!     View,
 //! };
 //!
-//! let mut viewA: View<'_, 2, f64> = View::new(
+//! let mut viewA: View<2, f64> = View::new(
 //!         Layout::Right, // see parameters & Kokkos doc
 //!         [3, 5],        // 3 rows, 5 columns
 //!     );
@@ -45,7 +45,7 @@ use atomic::{Atomic, Ordering};
 #[cfg(any(doc, not(any(feature = "rayon", feature = "threads", feature = "gpu"))))]
 use std::ops::IndexMut;
 
-use self::parameters::{compute_stride, DataTraits, DataType, InnerDataType, Layout};
+use self::parameters::{compute_stride, DataTraits, InnerDataType, Layout};
 use std::{fmt::Debug, ops::Index};
 
 #[derive(Debug)]
@@ -57,18 +57,18 @@ pub enum ViewError<'a> {
     DoubleMirroring(&'a str),
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug)]
 /// Main View structure.
 ///
 /// A `View` represent an N-dimensionnal array of type T. The implementation uses a
 /// const generic to handle dimension-specific operations.
-pub struct View<'a, const N: usize, T>
+pub struct View<const N: usize, T>
 where
     T: DataTraits,
 {
     /// Data container. Depending on the type, it can be a vector (`Owned`), a reference
     /// (`ReadOnly`) or a mutable reference (`ReadWrite`).
-    pub data: DataType<'a, T>,
+    pub data: Vec<InnerDataType<T>>,
     /// Memory layout of the view. Refer to Kokkos documentation for more information.
     pub layout: Layout<N>,
     /// Dimensions of the data represented by the view. The view can:
@@ -84,7 +84,7 @@ where
 
 #[cfg(not(any(feature = "rayon", feature = "threads", feature = "gpu")))]
 // ~~~~~~~~ Constructors
-impl<'a, const N: usize, T> View<'a, N, T>
+impl<const N: usize, T> View<N, T>
 where
     T: DataTraits, // fair assumption imo
 {
@@ -96,7 +96,7 @@ where
 
         // build & return
         Self {
-            data: DataType::Owned(vec![T::default(); capacity]), // should this be allocated though?
+            data: vec![T::default(); capacity], // should this be allocated though?
             layout,
             dim,
             stride,
@@ -114,7 +114,7 @@ where
 
         // build & return
         Self {
-            data: DataType::Owned(data),
+            data,
             layout,
             dim,
             stride,
@@ -124,7 +124,7 @@ where
 
 #[cfg(any(feature = "rayon", feature = "threads", feature = "gpu"))]
 // ~~~~~~~~ Constructors
-impl<'a, const N: usize, T> View<'a, N, T>
+impl<const N: usize, T> View<N, T>
 where
     T: DataTraits, // fair assumption imo
 {
@@ -136,7 +136,7 @@ where
 
         // build & return
         Self {
-            data: DataType::Owned((0..capacity).map(|_| Atomic::new(T::default())).collect()), // should this be allocated though?
+            data: (0..capacity).map(|_| Atomic::new(T::default())).collect(),
             layout,
             dim,
             stride,
@@ -154,7 +154,7 @@ where
 
         // build & return
         Self {
-            data: DataType::Owned(data.into_iter().map(|elem| Atomic::new(elem)).collect()),
+            data: data.into_iter().map(|elem| Atomic::new(elem)).collect(),
             layout,
             dim,
             stride,
@@ -163,7 +163,7 @@ where
 }
 
 // ~~~~~~~~ Uniform writing interface across all features
-impl<'a, const N: usize, T> View<'a, N, T>
+impl<const N: usize, T> View<N, T>
 where
     T: DataTraits,
 {
@@ -259,13 +259,7 @@ where
     ///
     /// This method is meant to be used in tests
     pub fn raw_val<'b>(self) -> Result<Vec<T>, ViewError<'b>> {
-        if let DataType::Owned(v) = self.data {
-            Ok(v)
-        } else {
-            Err(ViewError::ValueError(
-                "Cannot fetch raw values of a non-data-owning views",
-            ))
-        }
+        Ok(self.data)
     }
 
     #[cfg(all(test, any(feature = "rayon", feature = "threads", feature = "gpu")))]
@@ -273,15 +267,11 @@ where
     ///
     /// This method is meant to be used in tests
     pub fn raw_val<'b>(self) -> Result<Vec<T>, ViewError<'b>> {
-        if let DataType::Owned(v) = self.data {
-            Ok(v.iter()
-                .map(|elem| elem.load(atomic::Ordering::Relaxed))
-                .collect::<Vec<T>>())
-        } else {
-            Err(ViewError::ValueError(
-                "Cannot fetch raw values of a non-data-owning views",
-            ))
-        }
+        Ok(self
+            .data
+            .iter()
+            .map(|elem| elem.load(atomic::Ordering::Relaxed))
+            .collect::<Vec<T>>())
     }
 
     #[inline(always)]
@@ -296,7 +286,7 @@ where
 }
 
 /// **Read-only access is always implemented.**
-impl<'a, const N: usize, T> Index<[usize; N]> for View<'a, N, T>
+impl<const N: usize, T> Index<[usize; N]> for View<N, T>
 where
     T: DataTraits,
 {
@@ -304,41 +294,20 @@ where
 
     fn index(&self, index: [usize; N]) -> &Self::Output {
         let flat_idx: usize = self.flat_idx(index);
-        match &self.data {
-            DataType::Owned(v) => {
-                assert!(flat_idx < v.len()); // remove bounds check
-                &v[flat_idx]
-            }
-            DataType::Borrowed(slice) => {
-                assert!(flat_idx < slice.len()); // remove bounds check
-                &slice[flat_idx]
-            }
-            DataType::MutBorrowed(mut_slice) => {
-                assert!(flat_idx < mut_slice.len()); // remove bounds check
-                &mut_slice[flat_idx]
-            }
-        }
+        assert!(flat_idx < self.data.len()); // remove bounds check
+        &self.data[flat_idx]
     }
 }
 
 #[cfg(not(any(feature = "rayon", feature = "threads", feature = "gpu")))]
 /// **Read-write access is only implemented when no parallel features are enabled.**
-impl<'a, const N: usize, T> IndexMut<[usize; N]> for View<'a, N, T>
+impl<const N: usize, T> IndexMut<[usize; N]> for View<N, T>
 where
     T: DataTraits,
 {
     fn index_mut(&mut self, index: [usize; N]) -> &mut Self::Output {
         let flat_idx: usize = self.flat_idx(index);
-        match &mut self.data {
-            DataType::Owned(v) => {
-                assert!(flat_idx < v.len()); // remove bounds check
-                &mut v[flat_idx]
-            }
-            DataType::Borrowed(_) => unimplemented!("Cannot mutably access a read-only view!"),
-            DataType::MutBorrowed(mut_slice) => {
-                assert!(flat_idx < mut_slice.len()); // remove bounds check
-                &mut mut_slice[flat_idx]
-            }
-        }
+        assert!(flat_idx < self.data.len()); // remove bounds check
+        &mut self.data[flat_idx]
     }
 }

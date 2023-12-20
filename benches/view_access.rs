@@ -18,7 +18,7 @@ fn f1(length: usize, indices: &[usize]) {
 
 // 1D view access
 fn f1_b(length: usize, indices: &[usize]) {
-    let v_y: View<'_, 1, f64> = View::new_from_data(vec![0.0; length], Layout::Right, [length]);
+    let v_y: View<1, f64> = View::new_from_data(vec![0.0; length], Layout::Right, [length]);
     let idx = &indices[0..length];
 
     idx.iter().for_each(|i| {
@@ -40,7 +40,7 @@ fn f2(length: usize, indices: &[(usize, usize)]) {
 
 // 2D view access
 fn f2_b(length: usize, indices: &[(usize, usize)]) {
-    let v_y: View<'_, 2, f64> =
+    let v_y: View<2, f64> =
         View::new_from_data(vec![0.0; length * length], Layout::Right, [length, length]);
     let idx = &indices[0..length];
 
@@ -70,7 +70,7 @@ fn f3(length: usize, indices: &[(usize, usize, usize)]) {
 
 // 3D view access
 fn f3_b(length: usize, indices: &[(usize, usize, usize)]) {
-    let v_y: View<'_, 3, f64> = View::new_from_data(
+    let v_y: View<3, f64> = View::new_from_data(
         vec![0.0; length * length * length],
         Layout::Right,
         [length, length, length],
