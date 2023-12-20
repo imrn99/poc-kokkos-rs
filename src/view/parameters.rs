@@ -13,7 +13,7 @@
 //! - Memory traits
 
 use std::{
-    alloc::{alloc, Layout},
+    alloc::{alloc, dealloc, Layout},
     fmt::Debug,
 };
 
@@ -25,8 +25,10 @@ use super::ViewError;
 /// Maximum possible depth (i.e. number of dimensions) for a view.
 pub const MAX_VIEW_DEPTH: usize = 8;
 
+// ~~~~~~~~~ Raw data ~~~~~~~~~
+
 /// Supertrait with common trait that elements of a View should implement.
-pub trait DataTraits: Debug + Clone + Copy + Default {}
+pub trait DataTraits: Debug + Clone + Copy + Default + Sized {}
 
 impl DataTraits for f64 {}
 impl DataTraits for f32 {}
@@ -57,7 +59,39 @@ pub type InnerDataType<T> = T;
 /// **Current version**: thread-safe
 pub type InnerDataType<T> = Atomic<T>;
 
-// ~~~~~~~~~ Layouts ~~~~~~~~~
+pub struct ViewData<T>
+where
+    T: DataTraits,
+{
+    pub ptr: *mut InnerDataType<T>,
+    pub size: usize,
+    pub lyt: Layout,
+}
+
+impl<T: DataTraits> ViewData<T> {
+    pub fn new(size: usize, memspace: MemorySpace) -> Self {
+        let (ptr, lyt) = allocate_block::<T>(size, memspace).unwrap();
+        Self { ptr, size, lyt }
+    }
+
+    pub fn get(&self, idx: isize) -> &T {
+        assert!((idx as usize) < self.size);
+        unsafe { self.ptr.offset(idx).as_ref().unwrap() }
+    }
+
+    pub fn get_mut(&mut self, idx: isize) -> &T {
+        assert!((idx as usize) < self.size);
+        unsafe { self.ptr.offset(idx).as_mut().unwrap() }
+    }
+}
+
+impl<T: DataTraits> Drop for ViewData<T> {
+    fn drop(&mut self) {
+        unsafe { dealloc(self.ptr as *mut u8, self.lyt) }
+    }
+}
+
+// ~~~~~~~~~ Memory layout ~~~~~~~~~
 
 /// Enum used to represent data layout. Struct enums is used in order to increase
 /// readability.
@@ -112,7 +146,7 @@ pub enum MemorySpace {
     GPU,
 }
 
-pub fn allocate_block<'a, T>(
+fn allocate_block<'a, T>(
     size: usize,
     memspace: MemorySpace,
 ) -> Result<(*mut T, Layout), ViewError<'a>> {
