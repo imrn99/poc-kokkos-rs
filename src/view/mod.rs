@@ -1,12 +1,7 @@
 //! data structure related code
 //!
-//! This module contains code used for the implementations of `Views`, a data structure
-//! defined and used by the Kokkos library. There are different types of views, all
-//! implemented using the same backend, [ViewBase].
-//!
-//! Eventually, the different types of Views should be removed and replaced by a single
-//! type. The distinction between original and mirrors doesn't seem necessary in a Rust
-//! implementation where the ownership system handles all memory transaction.
+//! This module contains code used for the implementations of *Views*, a data structure
+//! defined and used by the Kokkos library.
 //!
 //! In order to have thread-safe structures to use in parallel statement, the inner data
 //! type of views is adjusted implicitly when compiling using parallelization features.
@@ -63,8 +58,10 @@ pub enum ViewError<'a> {
 }
 
 #[derive(Debug, PartialEq)]
-/// Common structure used as the backend of all `View` types. The main differences between
-/// usable types is the type of the `data` field.
+/// Main View structure.
+///
+/// A `View` represent an N-dimensionnal array of type T. The implementation uses a
+/// const generic to handle dimension-specific operations.
 pub struct View<'a, const N: usize, T>
 where
     T: DataTraits,
@@ -78,7 +75,7 @@ where
     /// - be a vector (1 dimension)
     /// - be a multi-dimensionnal array (up to 8 dimensions)
     /// The number of dimensions is referred to as the _depth_. Dimension 0, i.e. scalar,
-    /// is not directly supported.
+    /// is not directly supported at the moment.
     pub dim: [usize; N],
     /// Stride between each element of a given dimension. Computed automatically for
     /// [Layout::Left] and [Layout::Right].
