@@ -91,11 +91,12 @@ where
         let capacity: usize = dim.iter().product();
 
         // build data holder
-        let data: ViewData<T> = ViewData::new(capacity, MemorySpace::CPU);
+        let mut viewdata: ViewData<T> = ViewData::new(capacity, MemorySpace::CPU);
+        viewdata.fill(T::default());
 
         // build & return
         Self {
-            data,
+            data: viewdata,
             layout,
             dim,
             stride,
