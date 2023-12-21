@@ -5,7 +5,7 @@ use poc_kokkos_rs::{
         parallel_for,
         parameters::{ExecutionPolicy, ExecutionSpace, RangePolicy, Schedule},
     },
-    view::{parameters::Layout, ViewOwned},
+    view::{parameters::MemoryLayout, View},
 };
 use rand::{
     distributions::{Distribution, Uniform},
@@ -16,8 +16,8 @@ use rand::{
 // Serial AXPY
 fn f1(x_init: Vec<f64>, y_init: Vec<f64>, alpha: f64) {
     let length = x_init.len();
-    let mut x = ViewOwned::new_from_data(x_init, Layout::Right, [length]);
-    let mut y = ViewOwned::new_from_data(y_init, Layout::Right, [length]);
+    let mut x = View::new_from_data(x_init, MemoryLayout::Right, [length]);
+    let mut y = View::new_from_data(y_init, MemoryLayout::Right, [length]);
     black_box(&mut x);
     black_box(&mut y);
 
@@ -43,8 +43,8 @@ fn f1(x_init: Vec<f64>, y_init: Vec<f64>, alpha: f64) {
 // DeviceCPU AXPY
 fn f2(x_init: Vec<f64>, y_init: Vec<f64>, alpha: f64) {
     let length = x_init.len();
-    let mut x = ViewOwned::new_from_data(x_init, Layout::Right, [length]);
-    let mut y = ViewOwned::new_from_data(y_init, Layout::Right, [length]);
+    let mut x = View::new_from_data(x_init, MemoryLayout::Right, [length]);
+    let mut y = View::new_from_data(y_init, MemoryLayout::Right, [length]);
     black_box(&mut x);
     black_box(&mut y);
 

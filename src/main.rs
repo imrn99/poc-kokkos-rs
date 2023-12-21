@@ -8,7 +8,7 @@ use poc_kokkos_rs::{
         parallel_for,
         parameters::{ExecutionPolicy, ExecutionSpace, RangePolicy, Schedule},
     },
-    view::{parameters::Layout, ViewOwned},
+    view::{parameters::MemoryLayout, View},
 };
 use rand::{distributions::Uniform, prelude::*, rngs::SmallRng, SeedableRng};
 
@@ -36,9 +36,9 @@ fn main() {
     let beta: f64 = range.sample(&mut rng);
 
     // inits again
-    let mut aa = ViewOwned::new_from_data(aa_init, Layout::Right, [length, length]);
-    let mut bb = ViewOwned::new_from_data(bb_init, Layout::Left, [length, length]); // optimal layout since we iterate inside columns :)
-    let mut cc = ViewOwned::new_from_data(cc_init, Layout::Right, [length, length]);
+    let mut aa = View::new_from_data(aa_init, MemoryLayout::Right, [length, length]);
+    let mut bb = View::new_from_data(bb_init, MemoryLayout::Left, [length, length]); // optimal layout since we iterate inside columns :)
+    let mut cc = View::new_from_data(cc_init, MemoryLayout::Right, [length, length]);
     black_box(&mut aa);
     black_box(&mut bb);
     black_box(&mut cc);
