@@ -82,9 +82,9 @@ impl<T: DataTraits> ViewData<T> {
     }
 
     #[cfg(not(any(feature = "rayon", feature = "threads", feature = "gpu")))]
-    pub fn get(&self, idx: usize) -> &T {
+    pub fn get(&self, idx: usize) -> T {
         assert!(idx < self.size);
-        unsafe { self.ptr.add(idx).as_ref().unwrap() }
+        unsafe { *self.ptr.add(idx).as_ref().unwrap() }
     }
 
     #[cfg(any(feature = "rayon", feature = "threads", feature = "gpu"))]
