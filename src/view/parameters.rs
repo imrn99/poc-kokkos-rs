@@ -66,12 +66,18 @@ where
     pub ptr: *mut InnerDataType<T>,
     pub size: usize,
     pub lyt: Layout,
+    pub mirror: bool,
 }
 
 impl<T: DataTraits> ViewData<T> {
     pub fn new(size: usize, memspace: MemorySpace) -> Self {
         let (ptr, lyt) = allocate_block::<InnerDataType<T>>(size, memspace).unwrap();
-        Self { ptr, size, lyt }
+        Self {
+            ptr,
+            size,
+            lyt,
+            mirror: false,
+        }
     }
 
     #[cfg(not(any(feature = "rayon", feature = "threads", feature = "gpu")))]
@@ -115,7 +121,10 @@ impl<T: DataTraits> ViewData<T> {
 
 impl<T: DataTraits> Drop for ViewData<T> {
     fn drop(&mut self) {
-        unsafe { dealloc(self.ptr as *mut u8, self.lyt) }
+        // if we're not a mirror, we should deallocate the memory
+        if !self.mirror {
+            unsafe { dealloc(self.ptr as *mut u8, self.lyt) }
+        }
     }
 }
 
