@@ -59,6 +59,7 @@ pub type InnerDataType<T> = T;
 /// **Current version**: thread-safe
 pub type InnerDataType<T> = Atomic<T>;
 
+#[derive(Debug)]
 pub struct ViewData<T>
 where
     T: DataTraits,
@@ -72,12 +73,14 @@ where
 impl<T: DataTraits> ViewData<T> {
     pub fn new(size: usize, memspace: MemorySpace) -> Self {
         let (ptr, lyt) = allocate_block::<InnerDataType<T>>(size, memspace).unwrap();
-        Self {
+        let mut tmp = Self {
             ptr,
             size,
             lyt,
             mirror: false,
-        }
+        };
+        tmp.fill(T::default()); // ensure initialization
+        tmp
     }
 
     #[cfg(not(any(feature = "rayon", feature = "threads", feature = "gpu")))]
@@ -116,6 +119,13 @@ impl<T: DataTraits> ViewData<T> {
         for idx in 0..self.size {
             self.set(idx, val);
         }
+    }
+
+    pub fn take_vals(&mut self, vals: &[T]) {
+        assert_eq!(vals.len(), self.size);
+        vals.iter()
+            .enumerate()
+            .for_each(|(idx, val)| self.set(idx, *val))
     }
 }
 
