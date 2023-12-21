@@ -42,11 +42,8 @@ pub mod parameters;
 #[cfg(any(feature = "rayon", feature = "threads", feature = "gpu"))]
 use atomic::{Atomic, Ordering};
 
-#[cfg(any(doc, not(any(feature = "rayon", feature = "threads", feature = "gpu"))))]
-use std::ops::IndexMut;
-
-use self::parameters::{compute_stride, DataTraits, InnerDataType, MemoryLayout};
-use std::{fmt::Debug, ops::Index};
+use self::parameters::{compute_stride, DataTraits, MemoryLayout, MemorySpace, ViewData};
+use std::fmt::Debug;
 
 #[derive(Debug)]
 /// Enum used to classify view-related errors.
@@ -69,7 +66,7 @@ where
 {
     /// Data container. Depending on the type, it can be a vector (`Owned`), a reference
     /// (`ReadOnly`) or a mutable reference (`ReadWrite`).
-    pub data: Vec<InnerDataType<T>>,
+    pub data: ViewData<T>,
     /// Memory layout of the view. Refer to Kokkos documentation for more information.
     pub layout: MemoryLayout<N>,
     /// Dimensions of the data represented by the view. The view can:
@@ -95,9 +92,12 @@ where
         let stride = compute_stride(&dim, &layout);
         let capacity: usize = dim.iter().product();
 
+        // build data holder
+        let data: ViewData<T> = ViewData::new(capacity, MemorySpace::CPU);
+
         // build & return
         Self {
-            data: vec![T::default(); capacity], // should this be allocated though?
+            data,
             layout,
             dim,
             stride,
@@ -108,14 +108,14 @@ where
     pub fn new_from_data(data: Vec<T>, layout: MemoryLayout<N>, dim: [usize; N]) -> Self {
         // compute stride if necessary
         let stride = compute_stride(&dim, &layout);
-
-        // checks
         let capacity: usize = dim.iter().product();
-        assert_eq!(capacity, data.len());
+
+        let mut viewdata: ViewData<T> = ViewData::new(capacity, MemorySpace::CPU);
+        viewdata.take_vals(&data);
 
         // build & return
         Self {
-            data,
+            data: viewdata,
             layout,
             dim,
             stride,
@@ -135,9 +135,11 @@ where
         let stride = compute_stride(&dim, &layout);
         let capacity: usize = dim.iter().product();
 
+        let data: ViewData<T> = ViewData::new(capacity, MemorySpace::CPU);
+
         // build & return
         Self {
-            data: (0..capacity).map(|_| Atomic::new(T::default())).collect(),
+            data,
             layout,
             dim,
             stride,
@@ -148,14 +150,14 @@ where
     pub fn new_from_data(data: Vec<T>, layout: MemoryLayout<N>, dim: [usize; N]) -> Self {
         // compute stride if necessary
         let stride = compute_stride(&dim, &layout);
-
-        // checks
         let capacity: usize = dim.iter().product();
-        assert_eq!(capacity, data.len());
+
+        let mut viewdata: ViewData<T> = ViewData::new(capacity, MemorySpace::CPU);
+        viewdata.take_vals(&data);
 
         // build & return
         Self {
-            data: data.into_iter().map(|elem| Atomic::new(elem)).collect(),
+            data: viewdata,
             layout,
             dim,
             stride,
@@ -186,7 +188,8 @@ where
     ///
     /// **Current version**: no feature
     pub fn set(&mut self, index: [usize; N], val: T) {
-        self[index] = val;
+        let flat_index = self.flat_idx(index);
+        self.data.set(flat_index, val);
     }
 
     #[inline(always)]
@@ -207,7 +210,8 @@ where
     ///
     /// **Current version**: thread-safe
     pub fn set(&self, index: [usize; N], val: T) {
-        self[index].store(val, Ordering::Relaxed);
+        let flat_index = self.flat_idx(index);
+        self.data.set(flat_index, val);
     }
 
     #[inline(always)]
@@ -227,7 +231,8 @@ where
     ///
     /// **Current version**: no feature
     pub fn get(&self, index: [usize; N]) -> T {
-        self[index]
+        let flat_index = self.flat_idx(index);
+        self.data.get(flat_index)
     }
 
     #[inline(always)]
@@ -247,32 +252,17 @@ where
     ///
     /// **Current version**: thread-safe
     pub fn get(&self, index: [usize; N]) -> T {
-        self[index].load(atomic::Ordering::Relaxed)
+        let flat_index = self.flat_idx(index);
+        self.data.get(flat_index)
     }
 
     // ~~~~~~~~ Convenience
 
-    #[cfg(all(
-        test,
-        not(any(feature = "rayon", feature = "threads", feature = "gpu"))
-    ))]
     /// Consumes the view to return a `Vec` containing its raw data content.
     ///
     /// This method is meant to be used in tests
-    pub fn raw_val<'b>(self) -> Result<Vec<T>, ViewError<'b>> {
-        Ok(self.data)
-    }
-
-    #[cfg(all(test, any(feature = "rayon", feature = "threads", feature = "gpu")))]
-    /// Consumes the view to return a `Vec` containing its raw data content.
-    ///
-    /// This method is meant to be used in tests
-    pub fn raw_val<'b>(self) -> Result<Vec<T>, ViewError<'b>> {
-        Ok(self
-            .data
-            .iter()
-            .map(|elem| elem.load(atomic::Ordering::Relaxed))
-            .collect::<Vec<T>>())
+    pub fn raw_val(self) -> ViewData<T> {
+        self.data
     }
 
     #[inline(always)]
@@ -297,37 +287,10 @@ where
         // kokkos implements equality by reference
         // i.e. two views are equal if they reference
         // the same memory space.
-        self.data.as_ptr() == other.data.as_ptr()
+        self.data.ptr == other.data.ptr
         // meta data just needs strict equality
             && self.layout == other.layout
             && self.dim == other.dim
             && self.stride == other.stride
-    }
-}
-
-/// **Read-only access is always implemented.**
-impl<const N: usize, T> Index<[usize; N]> for View<N, T>
-where
-    T: DataTraits,
-{
-    type Output = InnerDataType<T>;
-
-    fn index(&self, index: [usize; N]) -> &Self::Output {
-        let flat_idx: usize = self.flat_idx(index);
-        assert!(flat_idx < self.data.len()); // remove bounds check
-        &self.data[flat_idx]
-    }
-}
-
-#[cfg(not(any(feature = "rayon", feature = "threads", feature = "gpu")))]
-/// **Read-write access is only implemented when no parallel features are enabled.**
-impl<const N: usize, T> IndexMut<[usize; N]> for View<N, T>
-where
-    T: DataTraits,
-{
-    fn index_mut(&mut self, index: [usize; N]) -> &mut Self::Output {
-        let flat_idx: usize = self.flat_idx(index);
-        assert!(flat_idx < self.data.len()); // remove bounds check
-        &mut self.data[flat_idx]
     }
 }
