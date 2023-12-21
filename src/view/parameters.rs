@@ -1,16 +1,14 @@
 //! view parameterization code
 //!
-//! This module contains all code used to parameterize views. Some parameters are direct
-//! Kokkos replicates while others are Rust-specific. Currently supported parameters
-//! include:
+//! This module contains all code used to parameterize views as well as internal
+//! types used for [`View`][super::View] implementation. Some parameters are direct
+//! Kokkos replicates while others are Rust-specific.
 //!
-//! - Type of the data owned by the view (Rust-specific)
+//! Currently supported parameters include:
+//!
 //! - Memory layout
-//!
-//! Possible future implementations include:
-//!
 //! - Memory space
-//! - Memory traits
+//!
 
 use std::{
     alloc::{alloc, dealloc, Layout},
@@ -59,21 +57,62 @@ pub type InnerDataType<T> = T;
 /// **Current version**: thread-safe
 pub type InnerDataType<T> = Atomic<T>;
 
+/// Internal data holding type for views
+///
+/// From a memory perspective, views are simply flat arrays. In order to handle
+/// runtime-known dimensions,the implementation requires something more flexible
+/// than an actual array as the storage type.
+///
+/// This structure is a stripped down version of a vector implementation, with
+/// enough utilities for our purpose. It operates using a pointer and save the
+/// [Layout] used for allocation to make sure deallocation is handled properly.
+///
+/// The pointer and layout fields are set as private since direct manipulation
+/// of these would create safety issues.
 #[derive(Debug)]
 pub struct ViewData<T>
 where
     T: DataTraits,
 {
     #[cfg(not(any(feature = "rayon", feature = "threads", feature = "gpu")))]
+    /// Pointer to the start of the allocated space.
+    ///
+    /// This field can have two different type according to enabled features:
+    ///
+    /// - any feature enabled: `ptr: *const InnerDataType<T>`
+    /// - no feature enabled: `ptr: *mut InnerDataType<T>`
+    ///
+    /// current version: `*mut`
     ptr: *mut InnerDataType<T>,
     #[cfg(any(feature = "rayon", feature = "threads", feature = "gpu"))]
+    /// Pointer to the start of the allocated space.
+    ///
+    /// This field can have two different type according to enabled features:
+    ///
+    /// - any feature enabled: `ptr: *const InnerDataType<T>`
+    /// - no feature enabled: `ptr: *mut InnerDataType<T>`
+    ///
+    /// current version: `*const`
     ptr: *const InnerDataType<T>,
+    /// Layout passed to the `alloc` method. Stored and used for the deallocation
+    /// at the end of the structure's lifetime.
     lyt: Layout,
+    /// Number of elements allocated. The actual memory size is
+    /// `size * size_of::<T>()`.
     pub size: usize,
+    /// Boolean used to identify if the current structure is held by a mirror
+    /// view, in which case the memory should not be deallocated when the mirror
+    /// is destroyed.
     pub mirror: bool,
 }
 
 impl<T: DataTraits> ViewData<T> {
+    /// Constructor.
+    ///
+    /// Eventually, this constructor could call one allocator or the other
+    /// according to the specified memory space. The [Allocator][std::alloc::Allocator]
+    /// trait is not yet stabilized though, so no device-specific allocators are
+    /// implementable at the moment.
     pub fn new(size: usize, memspace: MemorySpace) -> Self {
         let (ptr, lyt) = allocate_block::<InnerDataType<T>>(size, memspace).unwrap();
         Self {
@@ -85,12 +124,38 @@ impl<T: DataTraits> ViewData<T> {
     }
 
     #[cfg(not(any(feature = "rayon", feature = "threads", feature = "gpu")))]
+    /// Reading interface.
+    ///
+    /// Two different implementations of this method are defined in order to keep a
+    /// consistent user API across features:
+    ///
+    /// - any feature enabled: implictly use an atomic load operation on top of pointer
+    /// arithmetic. The load currently uses relaxed ordering, this may change.
+    /// - no feature enabled: uses pointer arithmetic.
+    ///
+    /// The pointer arithmetic is simply an addition. It is preceded by a check to
+    /// ensure that the provided index lands in the allocated space.
+    ///
+    /// **Current version**: no-feature
     pub fn get(&self, idx: usize) -> T {
         assert!(idx < self.size);
         unsafe { *self.ptr.add(idx).as_ref().unwrap() }
     }
 
     #[cfg(any(feature = "rayon", feature = "threads", feature = "gpu"))]
+    /// Reading interface.
+    ///
+    /// Two different implementations of this method are defined in order to keep a
+    /// consistent user API across features:
+    ///
+    /// - any feature enabled: implictly use an atomic load operation on top of pointer
+    /// arithmetic. The load currently uses relaxed ordering, this may change.
+    /// - no feature enabled: uses pointer arithmetic.
+    ///
+    /// The pointer arithmetic is simply an addition. It is preceded by a check to
+    /// ensure that the provided index lands in the allocated space.
+    ///
+    /// **Current version**: thread-safe
     pub fn get(&self, idx: usize) -> T {
         assert!(idx < self.size);
         unsafe {
@@ -103,6 +168,20 @@ impl<T: DataTraits> ViewData<T> {
     }
 
     #[cfg(not(any(feature = "rayon", feature = "threads", feature = "gpu")))]
+    /// Writing interface.
+    ///
+    /// Two different implementations of this method are defined in order to satisfy
+    /// the (im)mutability requirements when using parallelization features & keep a
+    /// consistent user API:
+    ///
+    /// - any feature enabled: implictly use an atomic store operation on top of pointer
+    /// arithmetic. The store currently uses relaxed ordering, this may change.
+    /// - no feature enabled: uses pointer arithmetic.
+    ///
+    /// The pointer arithmetic is simply an addition. It is preceded by a check to
+    /// ensure that the provided index lands in the allocated space.
+    ///
+    /// **Current version**: no-feature
     pub fn set(&mut self, idx: usize, val: T) {
         assert!(idx < self.size);
         let targ = unsafe { self.ptr.add(idx) };
@@ -110,18 +189,35 @@ impl<T: DataTraits> ViewData<T> {
     }
 
     #[cfg(any(feature = "rayon", feature = "threads", feature = "gpu"))]
+    /// Writing interface.
+    ///
+    /// Two different implementations of this method are defined in order to satisfy
+    /// the (im)mutability requirements when using parallelization features & keep a
+    /// consistent user API:
+    ///
+    /// - any feature enabled: implictly use an atomic store operation on top of pointer
+    /// arithmetic. The store currently uses relaxed ordering, this may change.
+    /// - no feature enabled: uses pointer arithmetic.
+    ///
+    /// The pointer arithmetic is simply an addition. It is preceded by a check to
+    /// ensure that the provided index lands in the allocated space.
+    ///
+    /// **Current version**: thread-safe
     pub fn set(&self, idx: usize, val: T) {
         assert!(idx < self.size);
         let targ = unsafe { self.ptr.add(idx) };
         unsafe { (*targ).store(val, atomic::Ordering::Relaxed) };
     }
 
+    /// Convenience method. Fill the allocated space with the specified value.
     pub fn fill(&mut self, val: T) {
         for idx in 0..self.size {
             self.set(idx, val);
         }
     }
 
+    /// Convenience method. Fill the allocated space with the specified values.
+    /// The slice passed should have the same size as the allocated space.
     pub fn take_vals(&mut self, vals: &[T]) {
         assert_eq!(vals.len(), self.size);
         vals.iter()
@@ -129,6 +225,8 @@ impl<T: DataTraits> ViewData<T> {
             .for_each(|(idx, val)| self.set(idx, *val))
     }
 
+    /// Convenience method. Checks whether two [ViewData] structures point to
+    /// the same memory space.
     pub fn ptr_is_eq(&self, other: &Self) -> bool {
         self.ptr == other.ptr
     }
@@ -136,15 +234,23 @@ impl<T: DataTraits> ViewData<T> {
 
 impl<T: DataTraits> Drop for ViewData<T> {
     fn drop(&mut self) {
-        // if we're not a mirror, we should deallocate the memory
+        // we should deallocate memory only if we're not a mirror
         if !self.mirror {
             unsafe { dealloc(self.ptr as *mut u8, self.lyt) }
         }
     }
 }
 
+/// Cheesy fix used to share raw pointers across threads.
+///
+/// This should not pose any problems as long as raw pointers are
+/// not accessible.
 unsafe impl<T: DataTraits> Sync for ViewData<T> {}
 
+/// Cheesy fix used to share raw pointers across threads.
+///
+/// This should not pose any problems as long as raw pointers are
+/// not accessible.
 unsafe impl<T: DataTraits> Send for ViewData<T> {}
 
 // ~~~~~~~~~ Memory layout ~~~~~~~~~
@@ -197,8 +303,17 @@ pub fn compute_stride<const N: usize>(dim: &[usize; N], layout: &MemoryLayout<N>
 
 // ~~~~~~~~~ Memory space ~~~~~~~~~
 
+/// Enum used to represent target memory space for views.
+///
+/// By using device-specific allocators, it may be possible to mimic
+/// the templating implemented in Kokkos. As of now (1.74.1), the
+/// [Allocator][std::alloc::Allocator] is not yet stabilized, but it
+/// could make for some elegant wrapper around external tools (e.g.
+/// CUDA).
 pub enum MemorySpace {
+    /// Allocate on CPU.
     CPU,
+    /// Allocate on GPU. UNUSED
     GPU,
 }
 
