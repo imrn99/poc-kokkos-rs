@@ -79,7 +79,6 @@ where
     pub stride: [usize; N],
 }
 
-#[cfg(not(any(feature = "rayon", feature = "threads", feature = "gpu")))]
 // ~~~~~~~~ Constructors
 impl<const N: usize, T> View<N, T>
 where
@@ -104,48 +103,6 @@ where
     }
 
     /// Constructor.
-    pub fn new_from_data(data: Vec<T>, layout: MemoryLayout<N>, dim: [usize; N]) -> Self {
-        // compute stride if necessary
-        let stride = compute_stride(&dim, &layout);
-        let capacity: usize = dim.iter().product();
-
-        let mut viewdata: ViewData<T> = ViewData::new(capacity, MemorySpace::CPU);
-        viewdata.take_vals(&data);
-
-        // build & return
-        Self {
-            data: viewdata,
-            layout,
-            dim,
-            stride,
-        }
-    }
-}
-
-#[cfg(any(feature = "rayon", feature = "threads", feature = "gpu"))]
-// ~~~~~~~~ Constructors
-impl<const N: usize, T> View<N, T>
-where
-    T: DataTraits, // fair assumption imo
-{
-    /// Constructor used to create owned views.
-    pub fn new(layout: MemoryLayout<N>, dim: [usize; N]) -> Self {
-        // compute stride & capacity
-        let stride = compute_stride(&dim, &layout);
-        let capacity: usize = dim.iter().product();
-
-        let data: ViewData<T> = ViewData::new(capacity, MemorySpace::CPU);
-
-        // build & return
-        Self {
-            data,
-            layout,
-            dim,
-            stride,
-        }
-    }
-
-    /// Constructor used to create owned views. See dedicated methods for others.
     pub fn new_from_data(data: Vec<T>, layout: MemoryLayout<N>, dim: [usize; N]) -> Self {
         // compute stride if necessary
         let stride = compute_stride(&dim, &layout);
