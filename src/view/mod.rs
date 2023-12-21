@@ -258,11 +258,29 @@ where
 
     // ~~~~~~~~ Convenience
 
+    #[cfg(all(
+        test,
+        not(any(feature = "rayon", feature = "threads", feature = "gpu"))
+    ))]
     /// Consumes the view to return a `Vec` containing its raw data content.
     ///
     /// This method is meant to be used in tests
-    pub fn raw_val(self) -> ViewData<T> {
-        self.data
+    pub fn raw_val(self) -> Vec<T> {
+        (0..self.data.size)
+            // the Deref should result in copied values, hence not pose any problem with the deallocation.
+            .map(|idx| unsafe { *self.data.ptr.add(idx) })
+            .collect()
+    }
+
+    #[cfg(all(test, any(feature = "rayon", feature = "threads", feature = "gpu")))]
+    /// Consumes the view to return a `Vec` containing its raw data content.
+    ///
+    /// This method is meant to be used in tests
+    pub fn raw_val(self) -> Vec<T> {
+        (0..self.data.size)
+            // the Deref should result in copied values, hence not pose any problem with the deallocation.
+            .map(|idx| unsafe { (*self.data.ptr.add(idx)).load(atomic::Ordering::Relaxed) })
+            .collect()
     }
 
     #[inline(always)]
