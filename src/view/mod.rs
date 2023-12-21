@@ -39,9 +39,6 @@
 
 pub mod parameters;
 
-#[cfg(any(feature = "rayon", feature = "threads", feature = "gpu"))]
-use atomic::{Atomic, Ordering};
-
 use self::parameters::{compute_stride, DataTraits, MemoryLayout, MemorySpace, ViewData};
 use std::fmt::Debug;
 

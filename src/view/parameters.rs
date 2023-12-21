@@ -64,7 +64,10 @@ pub struct ViewData<T>
 where
     T: DataTraits,
 {
+    #[cfg(not(any(feature = "rayon", feature = "threads", feature = "gpu")))]
     pub ptr: *mut InnerDataType<T>,
+    #[cfg(any(feature = "rayon", feature = "threads", feature = "gpu"))]
+    pub ptr: *const InnerDataType<T>,
     pub size: usize,
     pub lyt: Layout,
     pub mirror: bool,
@@ -135,6 +138,10 @@ impl<T: DataTraits> Drop for ViewData<T> {
         }
     }
 }
+
+unsafe impl<T: DataTraits> Sync for ViewData<T> {}
+
+unsafe impl<T: DataTraits> Send for ViewData<T> {}
 
 // ~~~~~~~~~ Memory layout ~~~~~~~~~
 
