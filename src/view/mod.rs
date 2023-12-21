@@ -265,7 +265,7 @@ where
     pub fn raw_val(self) -> Vec<T> {
         (0..self.data.size)
             // the Deref should result in copied values, hence not pose any problem with the deallocation.
-            .map(|idx| unsafe { *self.data.ptr.add(idx) })
+            .map(|idx| self.data.get(idx))
             .collect()
     }
 
@@ -276,7 +276,7 @@ where
     pub fn raw_val(self) -> Vec<T> {
         (0..self.data.size)
             // the Deref should result in copied values, hence not pose any problem with the deallocation.
-            .map(|idx| unsafe { (*self.data.ptr.add(idx)).load(atomic::Ordering::Relaxed) })
+            .map(|idx| self.data.get(idx))
             .collect()
     }
 
@@ -302,7 +302,7 @@ where
         // kokkos implements equality by reference
         // i.e. two views are equal if they reference
         // the same memory space.
-        self.data.ptr == other.data.ptr
+        self.data.ptr_is_eq(&other.data)
         // meta data just needs strict equality
             && self.layout == other.layout
             && self.dim == other.dim

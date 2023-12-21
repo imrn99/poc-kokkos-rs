@@ -65,11 +65,11 @@ where
     T: DataTraits,
 {
     #[cfg(not(any(feature = "rayon", feature = "threads", feature = "gpu")))]
-    pub ptr: *mut InnerDataType<T>,
+    ptr: *mut InnerDataType<T>,
     #[cfg(any(feature = "rayon", feature = "threads", feature = "gpu"))]
-    pub ptr: *const InnerDataType<T>,
+    ptr: *const InnerDataType<T>,
+    lyt: Layout,
     pub size: usize,
-    pub lyt: Layout,
     pub mirror: bool,
 }
 
@@ -127,6 +127,10 @@ impl<T: DataTraits> ViewData<T> {
         vals.iter()
             .enumerate()
             .for_each(|(idx, val)| self.set(idx, *val))
+    }
+
+    pub fn ptr_is_eq(&self, other: &Self) -> bool {
+        self.ptr == other.ptr
     }
 }
 
