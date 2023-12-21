@@ -100,7 +100,7 @@ impl<T: DataTraits> ViewData<T> {
     }
 
     #[cfg(not(any(feature = "rayon", feature = "threads", feature = "gpu")))]
-    pub fn set(&self, idx: usize, val: T) {
+    pub fn set(&mut self, idx: usize, val: T) {
         assert!(idx < self.size);
         let targ = unsafe { self.ptr.add(idx) };
         unsafe { *targ = val };
@@ -269,5 +269,48 @@ mod tests {
         assert_eq!(ref_stride, cmp_stride);
         cmp_stride = compute_stride(&dim, &MemoryLayout::Left);
         assert_eq!(ref_stride, cmp_stride);
+    }
+}
+
+#[cfg(test)]
+mod viewdata {
+    use super::*;
+
+    const SIZE: usize = 10;
+    const OOB: usize = 12;
+    const IB: usize = 7;
+
+    #[test]
+    #[should_panic]
+    fn out_of_bounds() {
+        let dat: ViewData<f64> = ViewData::new(SIZE, MemorySpace::CPU);
+        dat.get(OOB);
+    }
+
+    #[test]
+    fn set_and_get() {
+        cfg_if::cfg_if! {
+            if #[cfg(any(feature = "threads", feature = "rayon", feature = "gpu"))] {
+                let dat: ViewData<f64> = ViewData::new(SIZE, MemorySpace::CPU);
+            } else {
+                let mut dat: ViewData<f64> = ViewData::new(SIZE, MemorySpace::CPU);
+            }
+        }
+        dat.set(IB, 10382.2891);
+        assert_eq!(dat.get(IB), 10382.2891);
+    }
+
+    #[test]
+    fn default_value() {
+        let dat: ViewData<f64> = ViewData::new(SIZE, MemorySpace::CPU);
+        (0..SIZE).for_each(|idx| assert_eq!(f64::default(), dat.get(idx)))
+    }
+
+    #[test]
+    fn fill() {
+        let mut dat: ViewData<f64> = ViewData::new(SIZE, MemorySpace::CPU);
+        (0..SIZE).for_each(|idx| assert_eq!(f64::default(), dat.get(idx)));
+        dat.fill(9534.284);
+        (0..SIZE).for_each(|idx| assert_eq!(9534.284, dat.get(idx)));
     }
 }
