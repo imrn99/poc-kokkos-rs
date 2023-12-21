@@ -73,14 +73,12 @@ where
 impl<T: DataTraits> ViewData<T> {
     pub fn new(size: usize, memspace: MemorySpace) -> Self {
         let (ptr, lyt) = allocate_block::<InnerDataType<T>>(size, memspace).unwrap();
-        let mut tmp = Self {
+        Self {
             ptr,
             size,
             lyt,
             mirror: false,
-        };
-        tmp.fill(T::default()); // ensure initialization
-        tmp
+        }
     }
 
     #[cfg(not(any(feature = "rayon", feature = "threads", feature = "gpu")))]
