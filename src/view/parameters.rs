@@ -139,7 +139,7 @@ impl<T: DataTraits> ViewData<T> {
     /// **Current version**: no-feature
     pub fn get(&self, idx: usize) -> T {
         assert!(idx < self.size);
-        unsafe { *self.ptr.add(idx).as_ref().unwrap() }
+        unsafe { *self.ptr.add(idx) }
     }
 
     #[cfg(any(feature = "rayon", feature = "threads", feature = "gpu"))]
@@ -158,13 +158,7 @@ impl<T: DataTraits> ViewData<T> {
     /// **Current version**: thread-safe
     pub fn get(&self, idx: usize) -> T {
         assert!(idx < self.size);
-        unsafe {
-            self.ptr
-                .add(idx)
-                .as_ref()
-                .unwrap()
-                .load(atomic::Ordering::Relaxed)
-        }
+        unsafe { (*self.ptr.add(idx)).load(atomic::Ordering::Relaxed) }
     }
 
     #[cfg(not(any(feature = "rayon", feature = "threads", feature = "gpu")))]
