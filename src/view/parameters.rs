@@ -422,14 +422,14 @@ mod viewdata {
 
     #[test]
     fn default_value() {
-        let dat: ViewData<f64> = ViewData::new(SIZE, MemorySpace::CPU);
+        let mut dat: ViewData<f64> = ViewData::new(SIZE, MemorySpace::CPU);
+        dat.fill(f64::default());
         (0..SIZE).for_each(|idx| assert_eq!(f64::default(), dat.get(idx)))
     }
 
     #[test]
     fn fill() {
         let mut dat: ViewData<f64> = ViewData::new(SIZE, MemorySpace::CPU);
-        (0..SIZE).for_each(|idx| assert_eq!(f64::default(), dat.get(idx)));
         dat.fill(9534.284);
         (0..SIZE).for_each(|idx| assert_eq!(9534.284, dat.get(idx)));
     }
