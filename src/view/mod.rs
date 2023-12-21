@@ -9,7 +9,8 @@
 //! allowing for feature-specific mutability in signatures while keeping a consistent user
 //! API.
 //!
-//! Parameters of aforementionned views are defined in the [`parameters`] sub-module.
+//! Parameters of aforementionned views are defined in the [`parameters`] sub-module. The
+//! module also, contains the internal types used to implement views.
 //!
 //! ### Example
 //!
@@ -61,8 +62,9 @@ pub struct View<const N: usize, T>
 where
     T: DataTraits,
 {
-    /// Data container. Depending on the type, it can be a vector (`Owned`), a reference
-    /// (`ReadOnly`) or a mutable reference (`ReadWrite`).
+    /// Data container. This is a custom structure, roughly equivalent to a
+    /// stripped-down vector. Most technical operations are defined through this
+    /// structure rather than through views directly.
     pub data: ViewData<T>,
     /// Memory layout of the view. Refer to Kokkos documentation for more information.
     pub layout: MemoryLayout<N>,
@@ -83,7 +85,7 @@ impl<const N: usize, T> View<N, T>
 where
     T: DataTraits, // fair assumption imo
 {
-    /// Constructor used to create owned views. See dedicated methods for others.
+    /// Constructor.
     pub fn new(layout: MemoryLayout<N>, dim: [usize; N]) -> Self {
         // compute stride & capacity
         let stride = compute_stride(&dim, &layout);
@@ -101,7 +103,7 @@ where
         }
     }
 
-    /// Constructor used to create owned views. See dedicated methods for others.
+    /// Constructor.
     pub fn new_from_data(data: Vec<T>, layout: MemoryLayout<N>, dim: [usize; N]) -> Self {
         // compute stride if necessary
         let stride = compute_stride(&dim, &layout);
@@ -126,7 +128,7 @@ impl<const N: usize, T> View<N, T>
 where
     T: DataTraits, // fair assumption imo
 {
-    /// Constructor used to create owned views. See dedicated methods for others.
+    /// Constructor used to create owned views.
     pub fn new(layout: MemoryLayout<N>, dim: [usize; N]) -> Self {
         // compute stride & capacity
         let stride = compute_stride(&dim, &layout);
@@ -171,17 +173,7 @@ where
     #[cfg(not(any(feature = "rayon", feature = "threads", feature = "gpu")))]
     /// Writing interface.
     ///
-    /// Two different implementations of this method are defined in order to satisfy
-    /// the (im)mutability requirements when using parallelization features & keep a
-    /// consistent user API:
-    ///
-    /// - any feature enabled: implictly use an atomic store operation on top of the
-    /// regular [Index] trait implementation to prevent a mutable borrow. The store
-    /// currently uses relaxed ordering, this may change.
-    /// - no feature enabled: uses a regular [IndexMut] trait implementation.
-    ///
-    /// Note that [Index] is always implemented while [IndexMut] only is when no
-    /// features are enabled.
+    /// Passthrough to the equivalent [ViewData][ViewData::set] method.
     ///
     /// **Current version**: no feature
     pub fn set(&mut self, index: [usize; N], val: T) {
@@ -193,17 +185,7 @@ where
     #[cfg(any(feature = "rayon", feature = "threads", feature = "gpu"))]
     /// Writing interface.
     ///
-    /// Two different implementations of this method are defined in order to satisfy
-    /// the (im)mutability requirements when using parallelization features & keep a
-    /// consistent user API:
-    ///
-    /// - any feature enabled: implictly use an atomic store operation on top of the
-    /// regular [Index] trait implementation to prevent a mutable borrow. The store
-    /// currently uses relaxed ordering, this may change.
-    /// - no feature enabled: uses a regular [IndexMut] trait implementation.
-    ///
-    /// Note that [Index] is always implemented while [IndexMut] only is when no
-    /// features are enabled.
+    /// Passthrough to the equivalent [ViewData][ViewData::set] method.
     ///
     /// **Current version**: thread-safe
     pub fn set(&self, index: [usize; N], val: T) {
@@ -215,16 +197,7 @@ where
     #[cfg(not(any(feature = "rayon", feature = "threads", feature = "gpu")))]
     /// Reading interface.
     ///
-    /// Two different implementations of this method are defined in order to keep a
-    /// consistent user API across features:
-    ///
-    /// - any feature enabled: implictly use an atomic load operation on top of the
-    /// regular [Index] trait implementation. The load currently uses relaxed ordering,
-    /// this may change.
-    /// - no feature enabled: uses the regular [Index] trait implementation.
-    ///
-    /// Note that [Index] is always implemented while [IndexMut] only is when no
-    /// features are enabled.
+    /// Passthrough to the equivalent [ViewData][ViewData::get] method.
     ///
     /// **Current version**: no feature
     pub fn get(&self, index: [usize; N]) -> T {
@@ -236,16 +209,7 @@ where
     #[cfg(any(feature = "rayon", feature = "threads", feature = "gpu"))]
     /// Reading interface.
     ///
-    /// Two different implementations of this method are defined in order to keep a
-    /// consistent user API across features:
-    ///
-    /// - any feature enabled: implictly use an atomic load operation on top of the
-    /// regular [Index] trait implementation. The load currently uses relaxed ordering,
-    /// this may change.
-    /// - no feature enabled: uses the regular [Index] trait implementation.
-    ///
-    /// Note that [Index] is always implemented while [IndexMut] only is when no
-    /// features are enabled.
+    /// Passthrough to the equivalent [ViewData][ViewData::get] method.
     ///
     /// **Current version**: thread-safe
     pub fn get(&self, index: [usize; N]) -> T {
@@ -281,7 +245,7 @@ where
     }
 
     #[inline(always)]
-    /// Mapping function between N-indices and the flat offset.
+    /// Mapping function between N-indices and the flat offset in the allocated memory.
     pub fn flat_idx(&self, index: [usize; N]) -> usize {
         index
             .iter()
