@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["say_hello","say_many_hello"]};

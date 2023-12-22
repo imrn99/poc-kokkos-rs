@@ -1,0 +1,1 @@
+window.ALL_CRATES = ["poc_kokkos_rs"];

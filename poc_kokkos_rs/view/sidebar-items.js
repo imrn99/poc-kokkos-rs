@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["ViewError"],"mod":["parameters"],"struct":["ViewBase"],"type":["ViewOwned","ViewRO","ViewRW"]};
