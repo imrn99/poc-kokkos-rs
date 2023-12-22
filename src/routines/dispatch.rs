@@ -357,17 +357,17 @@ mod tests {
         use super::*;
         use crate::{
             routines::parameters::{ExecutionSpace, Schedule},
-            view::{parameters::MemoryLayout, View},
+            view::{parameters::Layout, ViewOwned},
         };
         // fixes warnings when testing using a parallel feature
         cfg_if::cfg_if! {
             if #[cfg(any(feature = "threads", feature = "rayon", feature = "gpu"))] {
-                let mat = View::new_from_data(vec![0.0; 15], MemoryLayout::Right, [15]);
+                let mat = ViewOwned::new_from_data(vec![0.0; 15], Layout::Right, [15]);
             } else {
-                let mut mat = View::new_from_data(vec![0.0; 15], MemoryLayout::Right, [15]);
+                let mut mat = ViewOwned::new_from_data(vec![0.0; 15], Layout::Right, [15]);
             }
         }
-        let ref_mat = View::new_from_data(vec![1.0; 15], MemoryLayout::Right, [15]);
+        let ref_mat = ViewOwned::new_from_data(vec![1.0; 15], Layout::Right, [15]);
         let rangep = RangePolicy::RangePolicy(0..15);
         let execp = ExecutionPolicy {
             space: ExecutionSpace::DeviceCPU,
@@ -384,7 +384,7 @@ mod tests {
 
         serial(execp, kernel).unwrap();
 
-        assert_eq!(mat.raw_val(), ref_mat.raw_val());
+        assert_eq!(mat.raw_val().unwrap(), ref_mat.raw_val().unwrap());
     }
 
     #[test]
@@ -392,17 +392,17 @@ mod tests {
         use super::*;
         use crate::{
             routines::parameters::{ExecutionSpace, Schedule},
-            view::{parameters::MemoryLayout, View},
+            view::{parameters::Layout, ViewOwned},
         };
         // fixes warnings when testing using a parallel feature
         cfg_if::cfg_if! {
             if #[cfg(any(feature = "threads", feature = "rayon", feature = "gpu"))] {
-                let mat = View::new_from_data(vec![0.0; 150], MemoryLayout::Right, [10, 15]);
+                let mat = ViewOwned::new_from_data(vec![0.0; 150], Layout::Right, [10, 15]);
             } else {
-                let mut mat = View::new_from_data(vec![0.0; 150], MemoryLayout::Right, [10, 15]);
+                let mut mat = ViewOwned::new_from_data(vec![0.0; 150], Layout::Right, [10, 15]);
             }
         }
-        let ref_mat = View::new_from_data(vec![1.0; 150], MemoryLayout::Right, [10, 15]);
+        let ref_mat = ViewOwned::new_from_data(vec![1.0; 150], Layout::Right, [10, 15]);
         let rangep = RangePolicy::MDRangePolicy([0..10, 0..15]);
         let execp = ExecutionPolicy {
             space: ExecutionSpace::DeviceCPU,
@@ -419,7 +419,7 @@ mod tests {
 
         serial(execp, kernel).unwrap();
 
-        assert_eq!(mat.raw_val(), ref_mat.raw_val());
+        assert_eq!(mat.raw_val().unwrap(), ref_mat.raw_val().unwrap());
     }
 
     #[test]
@@ -427,18 +427,18 @@ mod tests {
         use super::*;
         use crate::{
             routines::parameters::{ExecutionSpace, Schedule},
-            view::{parameters::MemoryLayout, View},
+            view::{parameters::Layout, ViewOwned},
         };
 
         // fixes warnings when testing using a parallel feature
         cfg_if::cfg_if! {
             if #[cfg(any(feature = "threads", feature = "rayon", feature = "gpu"))] {
-                let mat = View::new_from_data(vec![0.0; 15], MemoryLayout::Right, [15]);
+                let mat = ViewOwned::new_from_data(vec![0.0; 15], Layout::Right, [15]);
             } else {
-                let mut mat = View::new_from_data(vec![0.0; 15], MemoryLayout::Right, [15]);
+                let mut mat = ViewOwned::new_from_data(vec![0.0; 15], Layout::Right, [15]);
             }
         }
-        let ref_mat = View::new_from_data(vec![1.0; 15], MemoryLayout::Right, [15]);
+        let ref_mat = ViewOwned::new_from_data(vec![1.0; 15], Layout::Right, [15]);
         #[allow(clippy::single_range_in_vec_init)]
         let rangep = RangePolicy::MDRangePolicy([0..15]);
         let execp = ExecutionPolicy {
@@ -455,6 +455,6 @@ mod tests {
         });
 
         serial(execp, kernel).unwrap();
-        assert_eq!(mat.raw_val(), ref_mat.raw_val());
+        assert_eq!(mat.raw_val().unwrap(), ref_mat.raw_val().unwrap());
     }
 }
