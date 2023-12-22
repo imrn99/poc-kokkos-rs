@@ -5,7 +5,7 @@ use poc_kokkos_rs::{
         parallel_for,
         parameters::{ExecutionPolicy, ExecutionSpace, RangePolicy, Schedule},
     },
-    view::{parameters::MemoryLayout, View},
+    view::{parameters::Layout, ViewOwned},
 };
 use rand::{
     distributions::{Distribution, Uniform},
@@ -25,9 +25,9 @@ fn f1(
     // worst case layout:
     // iterate on lines -> column-major layout (Left)
     // iterate on rows  -> line-major layout   (Right)
-    let mut aa = View::new_from_data(aa_init, MemoryLayout::Left, [length, length]);
-    let mut bb = View::new_from_data(bb_init, MemoryLayout::Right, [length, length]);
-    let mut cc = View::new_from_data(cc_init, MemoryLayout::Left, [length, length]);
+    let mut aa = ViewOwned::new_from_data(aa_init, Layout::Left, [length, length]);
+    let mut bb = ViewOwned::new_from_data(bb_init, Layout::Right, [length, length]);
+    let mut cc = ViewOwned::new_from_data(cc_init, Layout::Left, [length, length]);
     black_box(&mut aa);
     black_box(&mut bb);
     black_box(&mut cc);
@@ -69,9 +69,9 @@ fn f2(
     // best case layout:
     // iterate on lines -> line-major layout   (Right)
     // iterate on rows  -> column-major layout (Left)
-    let mut aa = View::new_from_data(aa_init, MemoryLayout::Right, [length, length]);
-    let mut bb = View::new_from_data(bb_init, MemoryLayout::Right, [length, length]);
-    let mut cc = View::new_from_data(cc_init, MemoryLayout::Right, [length, length]);
+    let mut aa = ViewOwned::new_from_data(aa_init, Layout::Right, [length, length]);
+    let mut bb = ViewOwned::new_from_data(bb_init, Layout::Right, [length, length]);
+    let mut cc = ViewOwned::new_from_data(cc_init, Layout::Right, [length, length]);
     black_box(&mut aa);
     black_box(&mut bb);
     black_box(&mut cc);
@@ -110,9 +110,9 @@ fn f3(
     alpha: f64,
     beta: f64,
 ) {
-    let mut aa = View::new_from_data(aa_init, MemoryLayout::Right, [length, length]);
-    let mut bb = View::new_from_data(bb_init, MemoryLayout::Left, [length, length]);
-    let mut cc = View::new_from_data(cc_init, MemoryLayout::Right, [length, length]);
+    let mut aa = ViewOwned::new_from_data(aa_init, Layout::Right, [length, length]);
+    let mut bb = ViewOwned::new_from_data(bb_init, Layout::Left, [length, length]);
+    let mut cc = ViewOwned::new_from_data(cc_init, Layout::Right, [length, length]);
     black_box(&mut aa);
     black_box(&mut bb);
     black_box(&mut cc);
