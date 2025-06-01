@@ -1,6 +1,9 @@
-use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
-use poc_kokkos_rs::view::{parameters::Layout, ViewOwned};
+use std::hint::black_box;
+
+use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 use rand::prelude::*;
+
+use poc_kokkos_rs::view::{parameters::Layout, ViewOwned};
 
 // this bench is used to evaluate the cost of accessing views' data
 // all benched functions contain 10^3 accesses.
@@ -88,7 +91,7 @@ pub fn criterion_benchmark(c: &mut Criterion) {
     // Generate/Define the input
     const DATA_SIZE: u32 = 11; // 2048 length vector, 2048*2048 matrix
     let length = 2_usize.pow(DATA_SIZE);
-    let mut rng = SmallRng::from_entropy();
+    let mut rng = SmallRng::seed_from_u64(989127423764203);
     let indices1: Vec<usize> = rand::seq::index::sample(&mut rng, length, length).into_vec();
     let indices1b: Vec<usize> = rand::seq::index::sample(&mut rng, length, length).into_vec();
     let indices1bb: Vec<usize> = rand::seq::index::sample(&mut rng, length, length).into_vec();

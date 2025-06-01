@@ -1,4 +1,12 @@
-use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
+use std::hint::black_box;
+
+use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
+use rand::{
+    distr::{Distribution, Uniform},
+    rngs::SmallRng,
+    SeedableRng,
+};
+
 use poc_kokkos_rs::{
     functor::KernelArgs,
     routines::{
@@ -6,11 +14,6 @@ use poc_kokkos_rs::{
         parameters::{ExecutionPolicy, ExecutionSpace, RangePolicy, Schedule},
     },
     view::{parameters::Layout, ViewOwned},
-};
-use rand::{
-    distributions::{Distribution, Uniform},
-    rngs::SmallRng,
-    SeedableRng,
 };
 
 // Serial GEMM
@@ -101,7 +104,7 @@ pub fn criterion_benchmark(c: &mut Criterion) {
     let length = 2_usize.pow(DATA_SIZE);
     let seed: u64 = 9817498146784;
     let mut rng = SmallRng::seed_from_u64(seed);
-    let range: Uniform<f64> = rand::distributions::Uniform::new(0.0, 100.0);
+    let range: Uniform<f64> = Uniform::new(0.0, 100.0).unwrap();
     let aa_init: Vec<f64> = (0..length * length)
         .map(|_| range.sample(&mut rng))
         .collect();
