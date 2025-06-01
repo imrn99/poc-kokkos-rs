@@ -10,7 +10,7 @@ use poc_kokkos_rs::{
     },
     view::{parameters::Layout, ViewOwned},
 };
-use rand::{distributions::Uniform, prelude::*, rngs::SmallRng, SeedableRng};
+use rand::{distr::Uniform, prelude::*, rngs::SmallRng, SeedableRng};
 
 fn main() {
     // ffi::say_hello();
@@ -22,7 +22,7 @@ fn main() {
     let length = 2_usize.pow(DATA_SIZE);
     let seed: u64 = 9817498146784;
     let mut rng = SmallRng::seed_from_u64(seed);
-    let range: Uniform<f64> = rand::distributions::Uniform::new(0.0, 100.0);
+    let range: Uniform<f64> = Uniform::new(0.0, 100.0).unwrap();
     let aa_init: Vec<f64> = (0..length * length)
         .map(|_| range.sample(&mut rng))
         .collect();

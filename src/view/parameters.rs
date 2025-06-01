@@ -16,12 +16,13 @@ use std::fmt::Debug;
 
 #[cfg(any(feature = "rayon", feature = "threads", feature = "gpu"))]
 use atomic::Atomic;
+use bytemuck::Pod;
 
 /// Maximum possible depth (i.e. number of dimensions) for a view.
 pub const MAX_VIEW_DEPTH: usize = 8;
 
 /// Supertrait with common trait that elements of a View should implement.
-pub trait DataTraits: Debug + Clone + Copy + Default {}
+pub trait DataTraits: Debug + Clone + Copy + Default + Pod {}
 
 impl DataTraits for f64 {}
 impl DataTraits for f32 {}
