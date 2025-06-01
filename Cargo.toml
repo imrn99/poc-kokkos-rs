@@ -21,7 +21,6 @@ gpu = ["dep:atomic"]
 # DEPENDENCIES
 
 [dependencies]
-cxx = "*"
 cfg-if = "*"
 rayon = { version = "*", optional = true }
 atomic = { version = "0.5.3", optional = true }
@@ -33,9 +32,6 @@ rand = { version = "*", features = ["small_rng", "alloc"] }
 criterion = { version = "*", features = ["html_reports"] }
 atomic = { version = "0.5.3" }
 rayon = { version = "*" }
-
-[build-dependencies]
-cxx-build = "*"
 
 # BENCHMARKS
 

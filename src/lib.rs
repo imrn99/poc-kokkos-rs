@@ -69,19 +69,6 @@
 
 //#![feature(type_alias_impl_trait)]
 
-#[cxx::bridge(namespace = "")]
-/// C++ inter-op code
-pub mod ffi {
-    // C++ types and signatures exposed to Rust.
-    unsafe extern "C++" {
-        include!("poc-kokkos-rs/src/include/hello.hpp");
-
-        fn say_hello();
-
-        fn say_many_hello();
-    }
-}
-
 pub mod functor;
 pub mod routines;
 pub mod view;
