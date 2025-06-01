@@ -75,8 +75,10 @@ where
     /// Memory layout of the view. Refer to Kokkos documentation for more information.
     pub layout: Layout<N>,
     /// Dimensions of the data represented by the view. The view can:
+    ///
     /// - be a vector (1 dimension)
     /// - be a multi-dimensionnal array (up to 8 dimensions)
+    ///
     /// The number of dimensions is referred to as the _depth_. Dimension 0, i.e. scalar,
     /// is not directly supported.
     pub dim: [usize; N],
@@ -87,7 +89,7 @@ where
 
 #[cfg(not(any(feature = "rayon", feature = "threads", feature = "gpu")))]
 // ~~~~~~~~ Constructors
-impl<'a, const N: usize, T> ViewBase<'a, N, T>
+impl<const N: usize, T> ViewBase<'_, N, T>
 where
     T: DataTraits, // fair assumption imo
 {
@@ -127,7 +129,7 @@ where
 
 #[cfg(any(feature = "rayon", feature = "threads", feature = "gpu"))]
 // ~~~~~~~~ Constructors
-impl<'a, const N: usize, T> ViewBase<'a, N, T>
+impl<const N: usize, T> ViewBase<'_, N, T>
 where
     T: DataTraits, // fair assumption imo
 {
@@ -179,8 +181,8 @@ where
     /// consistent user API:
     ///
     /// - any feature enabled: implictly use an atomic store operation on top of the
-    /// regular [Index] trait implementation to prevent a mutable borrow. The store
-    /// currently uses relaxed ordering, this may change.
+    ///   regular [Index] trait implementation to prevent a mutable borrow. The store
+    ///   currently uses relaxed ordering, this may change.
     /// - no feature enabled: uses a regular [IndexMut] trait implementation.
     ///
     /// Note that [Index] is always implemented while [IndexMut] only is when no
@@ -200,8 +202,8 @@ where
     /// consistent user API:
     ///
     /// - any feature enabled: implictly use an atomic store operation on top of the
-    /// regular [Index] trait implementation to prevent a mutable borrow. The store
-    /// currently uses relaxed ordering, this may change.
+    ///   regular [Index] trait implementation to prevent a mutable borrow. The store
+    ///   currently uses relaxed ordering, this may change.
     /// - no feature enabled: uses a regular [IndexMut] trait implementation.
     ///
     /// Note that [Index] is always implemented while [IndexMut] only is when no
@@ -220,8 +222,8 @@ where
     /// consistent user API across features:
     ///
     /// - any feature enabled: implictly use an atomic load operation on top of the
-    /// regular [Index] trait implementation. The load currently uses relaxed ordering,
-    /// this may change.
+    ///   regular [Index] trait implementation. The load currently uses relaxed ordering,
+    ///   this may change.
     /// - no feature enabled: uses the regular [Index] trait implementation.
     ///
     /// Note that [Index] is always implemented while [IndexMut] only is when no
@@ -240,8 +242,8 @@ where
     /// consistent user API across features:
     ///
     /// - any feature enabled: implictly use an atomic load operation on top of the
-    /// regular [Index] trait implementation. The load currently uses relaxed ordering,
-    /// this may change.
+    ///   regular [Index] trait implementation. The load currently uses relaxed ordering,
+    ///   this may change.
     /// - no feature enabled: uses the regular [Index] trait implementation.
     ///
     /// Note that [Index] is always implemented while [IndexMut] only is when no
@@ -260,7 +262,7 @@ where
     ///
     /// Note that mirrors currently can only be created from the "original" view,
     /// i.e. the view owning the data.
-    pub fn create_mirror<'b>(&'a self) -> Result<ViewRO<'b, N, T>, ViewError>
+    pub fn create_mirror<'b>(&'a self) -> Result<ViewRO<'b, N, T>, ViewError<'a>>
     where
         'a: 'b, // 'a outlives 'b
     {
@@ -289,7 +291,7 @@ where
     ///
     /// Only defined when no feature are enabled since all interfaces should be immutable
     /// otherwise.
-    pub fn create_mutable_mirror<'b>(&'a mut self) -> Result<ViewRW<'b, N, T>, ViewError>
+    pub fn create_mutable_mirror<'b>(&'a mut self) -> Result<ViewRW<'b, N, T>, ViewError<'a>>
     where
         'a: 'b, // 'a outlives 'b
     {
@@ -356,7 +358,7 @@ where
 }
 
 /// **Read-only access is always implemented.**
-impl<'a, const N: usize, T> Index<[usize; N]> for ViewBase<'a, N, T>
+impl<const N: usize, T> Index<[usize; N]> for ViewBase<'_, N, T>
 where
     T: DataTraits,
 {
@@ -383,7 +385,7 @@ where
 
 #[cfg(not(any(feature = "rayon", feature = "threads", feature = "gpu")))]
 /// **Read-write access is only implemented when no parallel features are enabled.**
-impl<'a, const N: usize, T> IndexMut<[usize; N]> for ViewBase<'a, N, T>
+impl<const N: usize, T> IndexMut<[usize; N]> for ViewBase<'_, N, T>
 where
     T: DataTraits,
 {

@@ -33,7 +33,7 @@ impl DataTraits for f32 {}
 /// of Views. There are two possible values:
 ///
 /// - any feature enabled: `InnerDataType<T> = Atomic<T>`. By adding the atomic wrapping,
-/// operations on views can be implemented using thread-safe methods.
+///   operations on views can be implemented using thread-safe methods.
 /// - no feature enabled: `InnerDataType<T> = T`.
 ///
 /// **Current version**: no feature
@@ -46,7 +46,7 @@ pub type InnerDataType<T> = T;
 /// of Views. There are two possible values:
 ///
 /// - any feature enabled: `InnerDataType<T> = Atomic<T>`. By adding the atomic wrapping,
-/// operations on views can be implemented using thread-safe methods.
+///   operations on views can be implemented using thread-safe methods.
 /// - no feature enabled: `InnerDataType<T> = T`.
 ///
 /// **Current version**: thread-safe
@@ -73,7 +73,7 @@ where
     MutBorrowed(&'a mut [InnerDataType<T>]),
 }
 
-impl<'a, T> PartialEq for DataType<'a, T>
+impl<T> PartialEq for DataType<'_, T>
 where
     T: DataTraits,
 {

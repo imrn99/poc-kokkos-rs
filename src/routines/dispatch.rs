@@ -249,7 +249,7 @@ cfg_if::cfg_if! {
         /// of the Clone requirement.
         ///
         /// **Current version**: `rayon`
-        pub fn cpu<'a, const N: usize>(
+        pub fn cpu<const N: usize>(
             execp: ExecutionPolicy<N>,
             kernel: ForKernelType<N>,
         ) -> Result<(), DispatchError> {
