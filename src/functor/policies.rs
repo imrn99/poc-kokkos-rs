@@ -1,5 +1,8 @@
 use std::marker::ConstParamTy;
 
+#[cfg(feature = "rayon")]
+use rayon::prelude::*;
+
 use crate::functor::ForFunctor;
 
 // -- scheduling
@@ -44,13 +47,11 @@ where
 {
     type KernelArgType;
 
-    fn dispatch<
-        const EXECUTION_SPACE: ExecutionSpace,
-        const SCHEDULE: Schedule,
-        F: ForFunctor<Self>,
-    >(
-        functor: F,
-    );
+    fn dispatch_seq<const SCHEDULE: Schedule, F: ForFunctor<Self>>(self, functor: F);
+
+    fn dispatch_cpu<const SCHEDULE: Schedule, F: ForFunctor<Self>>(self, functor: F);
+
+    fn dispatch_gpu<const SCHEDULE: Schedule, F: ForFunctor<Self>>(self, functor: F);
 }
 
 pub struct TeamHandle {
@@ -78,26 +79,80 @@ pub struct ThreadVectorMDRange<const N: usize>(pub TeamHandle, pub [usize; N]);
 impl ExecutionPolicy for Range {
     type KernelArgType = usize;
 
-    fn dispatch<
-        const EXECUTION_SPACE: ExecutionSpace,
-        const SCHEDULE: Schedule,
-        F: ForFunctor<Self>,
-    >(
-        functor: F,
-    ) {
+    fn dispatch_seq<const SCHEDULE: Schedule, F: ForFunctor<Self>>(self, functor: F) {
+        let _ = SCHEDULE;
+        let Range(n) = self;
+
+        (0..n).into_iter().for_each(|i| functor.execute(i));
+    }
+
+    fn dispatch_cpu<const SCHEDULE: Schedule, F: ForFunctor<Self>>(self, functor: F) {
+        let Range(n) = self;
+
+        let n_threads = 4; // TODO: read it properly
+
+        match SCHEDULE {
+            #[cfg(not(feature = "rayon"))]
+            Schedule::Static => {
+                let chunk_size = n / n_threads + 1;
+
+                std::thread::scope(|s| {
+                    let mut handles = Vec::with_capacity(n_threads);
+                    let f = &functor;
+                    let blocks = (0..n_threads)
+                        .map(|tid| tid * chunk_size..(tid * chunk_size + chunk_size).min(n));
+
+                    for b in blocks {
+                        let h = s.spawn(move || {
+                            b.into_iter().for_each(|i| f.execute(i));
+                        });
+                        handles.push(h);
+                    }
+
+                    for h in handles {
+                        h.join().unwrap();
+                    }
+                });
+            }
+            #[cfg(not(feature = "rayon"))]
+            Schedule::Dynamic => {
+                unimplemented!("E: Dynamic dispatch isn't supported without rayon");
+            }
+            #[cfg(feature = "rayon")]
+            Schedule::Static => {
+                let chunk_size = n / n_threads + 1;
+
+                // mimic static scheduling by generating one item to process per thread
+                (0..n_threads)
+                    .into_par_iter()
+                    .map(|tid| tid * chunk_size..(tid * chunk_size + chunk_size).min(n))
+                    .for_each(|b| {
+                        b.into_iter().for_each(|i| functor.execute(i));
+                    });
+            }
+            #[cfg(feature = "rayon")]
+            Schedule::Dynamic => {
+                (0..n).into_par_iter().for_each(|i| functor.execute(i));
+            }
+        }
+    }
+
+    fn dispatch_gpu<const SCHEDULE: Schedule, F: ForFunctor<Self>>(self, _functor: F) {
         todo!()
     }
 }
 impl<const N: usize> ExecutionPolicy for MDRange<N> {
     type KernelArgType = [usize; N];
 
-    fn dispatch<
-        const EXECUTION_SPACE: ExecutionSpace,
-        const SCHEDULE: Schedule,
-        F: ForFunctor<Self>,
-    >(
-        functor: F,
-    ) {
+    fn dispatch_seq<const SCHEDULE: Schedule, F: ForFunctor<Self>>(self, _functor: F) {
+        todo!()
+    }
+
+    fn dispatch_cpu<const SCHEDULE: Schedule, F: ForFunctor<Self>>(self, _functor: F) {
+        todo!()
+    }
+
+    fn dispatch_gpu<const SCHEDULE: Schedule, F: ForFunctor<Self>>(self, _functor: F) {
         todo!()
     }
 }
@@ -105,39 +160,45 @@ impl<const N: usize> ExecutionPolicy for MDRange<N> {
 impl ExecutionPolicy for TeamPolicy {
     type KernelArgType = TeamHandle;
 
-    fn dispatch<
-        const EXECUTION_SPACE: ExecutionSpace,
-        const SCHEDULE: Schedule,
-        F: ForFunctor<Self>,
-    >(
-        functor: F,
-    ) {
+    fn dispatch_seq<const SCHEDULE: Schedule, F: ForFunctor<Self>>(self, _functor: F) {
+        todo!()
+    }
+
+    fn dispatch_cpu<const SCHEDULE: Schedule, F: ForFunctor<Self>>(self, _functor: F) {
+        todo!()
+    }
+
+    fn dispatch_gpu<const SCHEDULE: Schedule, F: ForFunctor<Self>>(self, _functor: F) {
         todo!()
     }
 }
 impl ExecutionPolicy for PerTeam {
     type KernelArgType = usize; // ?
 
-    fn dispatch<
-        const EXECUTION_SPACE: ExecutionSpace,
-        const SCHEDULE: Schedule,
-        F: ForFunctor<Self>,
-    >(
-        functor: F,
-    ) {
+    fn dispatch_seq<const SCHEDULE: Schedule, F: ForFunctor<Self>>(self, _functor: F) {
+        todo!()
+    }
+
+    fn dispatch_cpu<const SCHEDULE: Schedule, F: ForFunctor<Self>>(self, _functor: F) {
+        todo!()
+    }
+
+    fn dispatch_gpu<const SCHEDULE: Schedule, F: ForFunctor<Self>>(self, _functor: F) {
         todo!()
     }
 }
 impl ExecutionPolicy for PerThread {
     type KernelArgType = usize; // ?
 
-    fn dispatch<
-        const EXECUTION_SPACE: ExecutionSpace,
-        const SCHEDULE: Schedule,
-        F: ForFunctor<Self>,
-    >(
-        functor: F,
-    ) {
+    fn dispatch_seq<const SCHEDULE: Schedule, F: ForFunctor<Self>>(self, _functor: F) {
+        todo!()
+    }
+
+    fn dispatch_cpu<const SCHEDULE: Schedule, F: ForFunctor<Self>>(self, _functor: F) {
+        todo!()
+    }
+
+    fn dispatch_gpu<const SCHEDULE: Schedule, F: ForFunctor<Self>>(self, _functor: F) {
         todo!()
     }
 }
@@ -145,26 +206,30 @@ impl ExecutionPolicy for PerThread {
 impl ExecutionPolicy for TeamThreadRange {
     type KernelArgType = usize;
 
-    fn dispatch<
-        const EXECUTION_SPACE: ExecutionSpace,
-        const SCHEDULE: Schedule,
-        F: ForFunctor<Self>,
-    >(
-        functor: F,
-    ) {
+    fn dispatch_seq<const SCHEDULE: Schedule, F: ForFunctor<Self>>(self, _functor: F) {
+        todo!()
+    }
+
+    fn dispatch_cpu<const SCHEDULE: Schedule, F: ForFunctor<Self>>(self, _functor: F) {
+        todo!()
+    }
+
+    fn dispatch_gpu<const SCHEDULE: Schedule, F: ForFunctor<Self>>(self, _functor: F) {
         todo!()
     }
 }
 impl<const N: usize> ExecutionPolicy for TeamThreadMDRange<N> {
     type KernelArgType = usize; // ?
 
-    fn dispatch<
-        const EXECUTION_SPACE: ExecutionSpace,
-        const SCHEDULE: Schedule,
-        F: ForFunctor<Self>,
-    >(
-        functor: F,
-    ) {
+    fn dispatch_seq<const SCHEDULE: Schedule, F: ForFunctor<Self>>(self, _functor: F) {
+        todo!()
+    }
+
+    fn dispatch_cpu<const SCHEDULE: Schedule, F: ForFunctor<Self>>(self, _functor: F) {
+        todo!()
+    }
+
+    fn dispatch_gpu<const SCHEDULE: Schedule, F: ForFunctor<Self>>(self, _functor: F) {
         todo!()
     }
 }
@@ -172,26 +237,30 @@ impl<const N: usize> ExecutionPolicy for TeamThreadMDRange<N> {
 impl ExecutionPolicy for ThreadVectorRange {
     type KernelArgType = usize;
 
-    fn dispatch<
-        const EXECUTION_SPACE: ExecutionSpace,
-        const SCHEDULE: Schedule,
-        F: ForFunctor<Self>,
-    >(
-        functor: F,
-    ) {
+    fn dispatch_seq<const SCHEDULE: Schedule, F: ForFunctor<Self>>(self, _functor: F) {
+        todo!()
+    }
+
+    fn dispatch_cpu<const SCHEDULE: Schedule, F: ForFunctor<Self>>(self, _functor: F) {
+        todo!()
+    }
+
+    fn dispatch_gpu<const SCHEDULE: Schedule, F: ForFunctor<Self>>(self, _functor: F) {
         todo!()
     }
 }
 impl<const N: usize> ExecutionPolicy for ThreadVectorMDRange<N> {
     type KernelArgType = usize; // ?
 
-    fn dispatch<
-        const EXECUTION_SPACE: ExecutionSpace,
-        const SCHEDULE: Schedule,
-        F: ForFunctor<Self>,
-    >(
-        functor: F,
-    ) {
+    fn dispatch_seq<const SCHEDULE: Schedule, F: ForFunctor<Self>>(self, _functor: F) {
+        todo!()
+    }
+
+    fn dispatch_cpu<const SCHEDULE: Schedule, F: ForFunctor<Self>>(self, _functor: F) {
+        todo!()
+    }
+
+    fn dispatch_gpu<const SCHEDULE: Schedule, F: ForFunctor<Self>>(self, _functor: F) {
         todo!()
     }
 }
@@ -199,26 +268,30 @@ impl<const N: usize> ExecutionPolicy for ThreadVectorMDRange<N> {
 impl ExecutionPolicy for TeamVectorRange {
     type KernelArgType = usize;
 
-    fn dispatch<
-        const EXECUTION_SPACE: ExecutionSpace,
-        const SCHEDULE: Schedule,
-        F: ForFunctor<Self>,
-    >(
-        functor: F,
-    ) {
+    fn dispatch_seq<const SCHEDULE: Schedule, F: ForFunctor<Self>>(self, _functor: F) {
+        todo!()
+    }
+
+    fn dispatch_cpu<const SCHEDULE: Schedule, F: ForFunctor<Self>>(self, _functor: F) {
+        todo!()
+    }
+
+    fn dispatch_gpu<const SCHEDULE: Schedule, F: ForFunctor<Self>>(self, _functor: F) {
         todo!()
     }
 }
 impl<const N: usize> ExecutionPolicy for TeamVectorMDRange<N> {
     type KernelArgType = usize; // ?
 
-    fn dispatch<
-        const EXECUTION_SPACE: ExecutionSpace,
-        const SCHEDULE: Schedule,
-        F: ForFunctor<Self>,
-    >(
-        functor: F,
-    ) {
+    fn dispatch_seq<const SCHEDULE: Schedule, F: ForFunctor<Self>>(self, _functor: F) {
+        todo!()
+    }
+
+    fn dispatch_cpu<const SCHEDULE: Schedule, F: ForFunctor<Self>>(self, _functor: F) {
+        todo!()
+    }
+
+    fn dispatch_gpu<const SCHEDULE: Schedule, F: ForFunctor<Self>>(self, _functor: F) {
         todo!()
     }
 }

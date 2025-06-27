@@ -21,9 +21,19 @@ pub fn parallel_for<
     P: ExecutionPolicy,
     F: ForFunctor<P>,
 >(
-    label: Option<&str>,
-    policy: P, // allows simplified sig for numerical ranges
+    _label: Option<&str>, // TODO: debug-level log?
+    policy: P,
     functor: F,
 ) {
-    <P as ExecutionPolicy>::dispatch::<EXECUTION_SPACE, SCHEDULE, F>(functor);
+    match EXECUTION_SPACE {
+        ExecutionSpace::Serial => {
+            policy.dispatch_seq::<SCHEDULE, F>(functor);
+        }
+        ExecutionSpace::DeviceCPU => {
+            policy.dispatch_cpu::<SCHEDULE, F>(functor);
+        }
+        ExecutionSpace::DeviceGPU => {
+            policy.dispatch_gpu::<SCHEDULE, F>(functor);
+        }
+    }
 }
