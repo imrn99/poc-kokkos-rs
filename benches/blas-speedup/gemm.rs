@@ -1,19 +1,15 @@
 use std::hint::black_box;
 
-use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
+use criterion::{BenchmarkId, Criterion, criterion_group, criterion_main};
 use rand::{
+    SeedableRng,
     distr::{Distribution, Uniform},
     rngs::SmallRng,
-    SeedableRng,
 };
 
 use poc_kokkos_rs::{
-    functor::KernelArgs,
-    routines::{
-        parallel_for,
-        parameters::{ExecutionPolicy, ExecutionSpace, RangePolicy, Schedule},
-    },
-    view::{parameters::Layout, ViewOwned},
+    functor::{ExecutionSpace, Range, Schedule, parallel_for},
+    view::{ViewOwned, parameters::Layout},
 };
 
 // Serial GEMM
@@ -32,28 +28,20 @@ fn f1(
     black_box(&mut bb);
     black_box(&mut cc);
 
-    let execp = ExecutionPolicy {
-        space: ExecutionSpace::Serial,
-        range: RangePolicy::RangePolicy(0..length),
-        schedule: Schedule::Static,
-    };
-
     // C = alpha * A * B + beta * C
-    let gemm_kernel = |arg: KernelArgs<1>| match arg {
-        // lines
-        KernelArgs::Index1D(i) => {
-            // cols
+    parallel_for::<{ ExecutionSpace::DeviceCPU }, { Schedule::Static }, _, _>(
+        None,
+        Range(length),
+        |i| {
             for j in 0..length {
                 // all b[k, j] for k values are adjacent in memory thanks to the LayoutLeft
                 let ab_ij: f64 = (0..length).map(|k| aa.get([i, k]) * bb.get([k, j])).sum();
                 let val: f64 = alpha * ab_ij + beta * cc.get([i, j]);
                 cc.set([i, j], val);
             }
-        }
-        KernelArgs::IndexND(_) => unimplemented!(),
-        KernelArgs::Handle => unimplemented!(),
-    };
-    parallel_for(execp, gemm_kernel).unwrap();
+        },
+    );
+
     black_box(&cc);
 }
 
@@ -73,28 +61,20 @@ fn f2(
     black_box(&mut bb);
     black_box(&mut cc);
 
-    let execp = ExecutionPolicy {
-        space: ExecutionSpace::DeviceCPU,
-        range: RangePolicy::RangePolicy(0..length),
-        schedule: Schedule::Static,
-    };
-
     // C = alpha * A * B + beta * C
-    let gemm_kernel = |arg: KernelArgs<1>| match arg {
-        // lines
-        KernelArgs::Index1D(i) => {
-            // cols
+    parallel_for::<{ ExecutionSpace::DeviceCPU }, { Schedule::Static }, _, _>(
+        None,
+        Range(length),
+        |i| {
             for j in 0..length {
                 // all b[k, j] for k values are adjacent in memory thanks to the LayoutLeft
                 let ab_ij: f64 = (0..length).map(|k| aa.get([i, k]) * bb.get([k, j])).sum();
                 let val: f64 = alpha * ab_ij + beta * cc.get([i, j]);
                 cc.set([i, j], val);
             }
-        }
-        KernelArgs::IndexND(_) => unimplemented!(),
-        KernelArgs::Handle => unimplemented!(),
-    };
-    parallel_for(execp, gemm_kernel).unwrap();
+        },
+    );
+
     black_box(&cc);
 }
 

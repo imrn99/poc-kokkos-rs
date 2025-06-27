@@ -49,26 +49,12 @@
 //! - `threads` : Uses [`std::thread`] methods to handle parallelization on CPU.
 //! - `gpu`: Currently used as a way to gate GPU usage as this cannot be done in pure Rust.
 //!
-//! ### C++ Interoperability
-//!
-//! The build script will read the `CXX` environment variable to choose which C++ compiler to use
-//! for Rust/C++ interop. Note that the crate itself does not currently use C++ code, only examples
-//! do.
-//!
-//! #### Known issues
-//!
-//! - On MacOs: Does not work with Apple Clang
-//!   - Solution: Homebrew Clang or tinker with flags to get OpenMP to work
-//! - On MacOs: XCode 15.0 was shipped with a broken `ld`
-//!   - Solution: pass the flag `-ld_classic` to the linker. Note that this flag isn't
-//!     recognized by the `ld` of previous versions of XCode. The line needed is
-//!     written in the `build.rs` script, it just needs to be uncommented if necessary.
-//!
 //! [1]: https://kokkos.github.io/kokkos-core-wiki/index.html
 //! [2]: https://docs.rs/rayon/latest/rayon/
 
-//#![feature(type_alias_impl_trait)]
+#![allow(incomplete_features)]
+#![feature(min_generic_const_args)]
+#![feature(adt_const_params)]
 
 pub mod functor;
-pub mod routines;
 pub mod view;

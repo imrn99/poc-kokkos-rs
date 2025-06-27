@@ -1,19 +1,15 @@
 use std::hint::black_box;
 
-use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
+use criterion::{BenchmarkId, Criterion, criterion_group, criterion_main};
 use rand::{
+    SeedableRng,
     distr::{Distribution, Uniform},
     rngs::SmallRng,
-    SeedableRng,
 };
 
 use poc_kokkos_rs::{
-    functor::KernelArgs,
-    routines::{
-        parallel_for,
-        parameters::{ExecutionPolicy, ExecutionSpace, RangePolicy, Schedule},
-    },
-    view::{parameters::Layout, ViewOwned},
+    functor::{ExecutionSpace, Range, Schedule, parallel_for},
+    view::{ViewOwned, parameters::Layout},
 };
 
 // Serial GEMV
@@ -26,23 +22,17 @@ fn f1(aa_init: Vec<f64>, x_init: Vec<f64>, y_init: Vec<f64>, alpha: f64, beta: f
     black_box(&mut x);
     black_box(&mut y);
 
-    let execp = ExecutionPolicy {
-        space: ExecutionSpace::Serial,
-        range: RangePolicy::RangePolicy(0..length),
-        schedule: Schedule::Static,
-    };
-
     // y = alpha * A * x + beta * y
-    let gemv_kernel = |arg: KernelArgs<1>| match arg {
-        KernelArgs::Index1D(i) => {
+    parallel_for::<{ ExecutionSpace::DeviceCPU }, { Schedule::Static }, _, _>(
+        None,
+        Range(length),
+        |i: usize| {
             let ax_i: f64 = (0..length).map(|j| aa.get([i, j]) * x.get([j])).sum();
             let val = alpha * ax_i + beta * y.get([i]);
             y.set([i], val);
-        }
-        KernelArgs::IndexND(_) => unimplemented!(),
-        KernelArgs::Handle => unimplemented!(),
-    };
-    parallel_for(execp, gemv_kernel).unwrap();
+        },
+    );
+
     black_box(&y);
 }
 
@@ -56,23 +46,17 @@ fn f2(aa_init: Vec<f64>, x_init: Vec<f64>, y_init: Vec<f64>, alpha: f64, beta: f
     black_box(&mut x);
     black_box(&mut y);
 
-    let execp = ExecutionPolicy {
-        space: ExecutionSpace::DeviceCPU,
-        range: RangePolicy::RangePolicy(0..length),
-        schedule: Schedule::Static,
-    };
-
     // y = alpha * A * x + beta * y
-    let gemv_kernel = |arg: KernelArgs<1>| match arg {
-        KernelArgs::Index1D(i) => {
+    parallel_for::<{ ExecutionSpace::DeviceCPU }, { Schedule::Static }, _, _>(
+        None,
+        Range(length),
+        |i: usize| {
             let ax_i: f64 = (0..length).map(|j| aa.get([i, j]) * x.get([j])).sum();
             let val = alpha * ax_i + beta * y.get([i]);
             y.set([i], val);
-        }
-        KernelArgs::IndexND(_) => unimplemented!(),
-        KernelArgs::Handle => unimplemented!(),
-    };
-    parallel_for(execp, gemv_kernel).unwrap();
+        },
+    );
+
     black_box(&y);
 }
 

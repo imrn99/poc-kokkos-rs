@@ -1,19 +1,15 @@
 use std::hint::black_box;
 
-use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
+use criterion::{BenchmarkId, Criterion, criterion_group, criterion_main};
 use rand::{
+    SeedableRng,
     distr::{Distribution, Uniform},
     rngs::SmallRng,
-    SeedableRng,
 };
 
 use poc_kokkos_rs::{
-    functor::KernelArgs,
-    routines::{
-        parallel_for,
-        parameters::{ExecutionPolicy, ExecutionSpace, RangePolicy, Schedule},
-    },
-    view::{parameters::Layout, ViewOwned},
+    functor::{ExecutionSpace, Range, Schedule, parallel_for},
+    view::{ViewOwned, parameters::Layout},
 };
 
 // Serial AXPY
@@ -24,22 +20,16 @@ fn f1(x_init: Vec<f64>, y_init: Vec<f64>, alpha: f64) {
     black_box(&mut x);
     black_box(&mut y);
 
-    let execp = ExecutionPolicy {
-        space: ExecutionSpace::Serial,
-        range: RangePolicy::RangePolicy(0..length),
-        schedule: Schedule::Static,
-    };
-
     // y = alpha * x + y
-    let axpy_kernel = |arg: KernelArgs<1>| match arg {
-        KernelArgs::Index1D(i) => {
+    parallel_for::<{ ExecutionSpace::DeviceCPU }, { Schedule::Static }, _, _>(
+        None,
+        Range(length),
+        |i| {
             let val = alpha * x.get([i]) + y.get([i]);
             y.set([i], val);
-        }
-        KernelArgs::IndexND(_) => unimplemented!(),
-        KernelArgs::Handle => unimplemented!(),
-    };
-    parallel_for(execp, axpy_kernel).unwrap();
+        },
+    );
+
     black_box(&y);
 }
 
@@ -51,23 +41,16 @@ fn f2(x_init: Vec<f64>, y_init: Vec<f64>, alpha: f64) {
     black_box(&mut x);
     black_box(&mut y);
 
-    let execp = ExecutionPolicy {
-        space: ExecutionSpace::DeviceCPU,
-        range: RangePolicy::RangePolicy(0..length),
-        schedule: Schedule::Static,
-    };
-
     // y = alpha * x + y
-    let axpy_kernel = |arg: KernelArgs<1>| match arg {
-        KernelArgs::Index1D(i) => {
+    parallel_for::<{ ExecutionSpace::DeviceCPU }, { Schedule::Static }, _, _>(
+        None,
+        Range(length),
+        |i| {
             let val = alpha * x.get([i]) + y.get([i]);
             y.set([i], val);
-        }
-        KernelArgs::IndexND(_) => unimplemented!(),
-        KernelArgs::Handle => unimplemented!(),
-    };
+        },
+    );
 
-    parallel_for(execp, axpy_kernel).unwrap();
     black_box(&y);
 }
 
