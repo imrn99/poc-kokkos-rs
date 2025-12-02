@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"constant":["MAX_VIEW_DEPTH"],"enum":["DataType","Layout"],"fn":["compute_stride"],"trait":["DataTraits"],"type":["InnerDataType"]};

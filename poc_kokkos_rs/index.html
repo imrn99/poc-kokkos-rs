@@ -1,0 +1,48 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Kokkos-rs: A Proof-of-Concept"><title>poc_kokkos_rs - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../static.files/rustdoc-e56847b5.css"><meta name="rustdoc-vars" data-root-path="../" data-static-root-path="../static.files/" data-current-crate="poc_kokkos_rs" data-themes="" data-resource-suffix="" data-rustdoc-version="1.91.1 (ed61e7d7e 2025-11-07)" data-channel="1.91.1" data-search-js="search-e256b49e.js" data-stringdex-js="stringdex-c3e638e9.js" data-settings-js="settings-c38705f0.js" ><script src="../static.files/storage-e2aeef58.js"></script><script defer src="../crates.js"></script><script defer src="../static.files/main-6dc2a7f3.js"></script><noscript><link rel="stylesheet" href="../static.files/noscript-263c88ec.css"></noscript><link rel="alternate icon" type="image/png" href="../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../static.files/favicon-044be391.svg"></head><body class="rustdoc mod crate"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><rustdoc-topbar><h2><a href="#">Crate poc_kokkos_rs</a></h2></rustdoc-topbar><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../poc_kokkos_rs/index.html">poc_<wbr>kokkos_<wbr>rs</a><span class="version">0.1.0</span></h2></div><div class="sidebar-elems"><ul class="block"><li><a id="all-types" href="all.html">All Items</a></li></ul><section id="rustdoc-toc"><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#kokkos-rs-a-proof-of-concept" title="Kokkos-rs: A Proof-of-Concept">Kokkos-rs: A Proof-of-Concept</a><ul><li><a href="#scope-of-the-project" title="Scope of the Project">Scope of the Project</a></li><li><a href="#quickstart" title="Quickstart">Quickstart</a></li><li><a href="#compilation" title="Compilation">Compilation</a></li></ul></li></ul><h3><a href="#modules">Crate Items</a></h3><ul class="block"><li><a href="#modules" title="Modules">Modules</a></li></ul></section><div id="rustdoc-modnav"></div></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><div class="width-limiter"><section id="main-content" class="content"><div class="main-heading"><h1>Crate <span>poc_<wbr>kokkos_<wbr>rs</span>&nbsp;<button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../src/poc_kokkos_rs/lib.rs.html#1-74">Source</a> </span></div><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><h2 id="kokkos-rs-a-proof-of-concept"><a class="doc-anchor" href="#kokkos-rs-a-proof-of-concept">§</a>Kokkos-rs: A Proof-of-Concept</h2><h3 id="scope-of-the-project"><a class="doc-anchor" href="#scope-of-the-project">§</a>Scope of the Project</h3>
+<p>The goal of this project is not to produce an entire Kokkos implementation nor to
+replicate the existing C++ library. While the current C++ source code is interesting
+to use as inspiration, the main reference is the model description.</p>
+<p>Additionally, because of language specific features (Rust strict compilation rules,
+C++ templates), you can expect the underlying implementation of concepts to be
+vastly different.</p>
+<h3 id="quickstart"><a class="doc-anchor" href="#quickstart">§</a>Quickstart</h3>
+<p>The PoC itself is a library, but you can run benchmarks and examples out of the box:</p>
+<div class="example-wrap"><pre class="language-bash"><code># all benchmarks
+cargo bench
+# a specific benchmark
+cargo bench --bench &lt;BENCHMARK&gt;
+# a specific example
+cargo run --example &lt;EXAMPLE&gt;</code></pre></div>
+<p>Generate local documentation:</p>
+<div class="example-wrap"><pre class="language-bash"><code>cargo doc --no-deps --open</code></pre></div>
+<p>Note that some elements of the documentation are feature specific.</p>
+<h3 id="compilation"><a class="doc-anchor" href="#compilation">§</a>Compilation</h3><h4 id="features"><a class="doc-anchor" href="#features">§</a>Features</h4>
+<p>Using <code>features</code>, the crate can be compiled to use different backend for execution of parallel section.
+These can also be enabled in benchmarks.</p>
+<div class="example-wrap"><pre class="language-bash"><code>cargo build --features &lt;FEATURE&gt;</code></pre></div>
+<p>Available features:</p>
+<ul>
+<li><code>rayon</code>: Uses the <a href="https://docs.rs/rayon/latest/rayon/">rayon</a> crate to handle parallelization on CPU.</li>
+<li><code>threads</code> : Uses <a href="https://doc.rust-lang.org/1.91.1/std/thread/index.html" title="mod std::thread"><code>std::thread</code></a> methods to handle parallelization on CPU.</li>
+<li><code>gpu</code>: Currently used as a way to gate GPU usage as this cannot be done in pure Rust.</li>
+</ul>
+<h4 id="c-interoperability"><a class="doc-anchor" href="#c-interoperability">§</a>C++ Interoperability</h4>
+<p>The build script will read the <code>CXX</code> environment variable to choose which C++ compiler to use
+for Rust/C++ interop. Note that the crate itself does not currently use C++ code, only examples
+do.</p>
+<h5 id="known-issues"><a class="doc-anchor" href="#known-issues">§</a>Known issues</h5>
+<ul>
+<li>On MacOs: Does not work with Apple Clang
+<ul>
+<li>Solution: Homebrew Clang or tinker with flags to get OpenMP to work</li>
+</ul>
+</li>
+<li>On MacOs: XCode 15.0 was shipped with a broken <code>ld</code>
+<ul>
+<li>Solution: pass the flag <code>-ld_classic</code> to the linker. Note that this flag isn’t
+recognized by the <code>ld</code> of previous versions of XCode. The line needed is
+written in the <code>build.rs</code> script, it just needs to be uncommented if necessary.</li>
+</ul>
+</li>
+</ul>
+</div></details><h2 id="modules" class="section-header">Modules<a href="#modules" class="anchor">§</a></h2><dl class="item-table"><dt><a class="mod" href="functor/index.html" title="mod poc_kokkos_rs::functor">functor</a></dt><dd>functor &amp; kernel related code</dd><dt><a class="mod" href="routines/index.html" title="mod poc_kokkos_rs::routines">routines</a></dt><dd>parallel statement related code</dd><dt><a class="mod" href="view/index.html" title="mod poc_kokkos_rs::view">view</a></dt><dd>data structure related code</dd></dl></section></div></main></body></html>

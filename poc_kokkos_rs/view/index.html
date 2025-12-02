@@ -1,0 +1,39 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="data structure related code"><title>poc_kokkos_rs::view - Rust</title><script>if(window.location.protocol!=="file:")document.head.insertAdjacentHTML("beforeend","SourceSerif4-Regular-6b053e98.ttf.woff2,FiraSans-Italic-81dc35de.woff2,FiraSans-Regular-0fe48ade.woff2,FiraSans-MediumItalic-ccf7e434.woff2,FiraSans-Medium-e1aa3f0a.woff2,SourceCodePro-Regular-8badfe75.ttf.woff2,SourceCodePro-Semibold-aa29a496.ttf.woff2".split(",").map(f=>`<link rel="preload" as="font" type="font/woff2"href="../../static.files/${f}">`).join(""))</script><link rel="stylesheet" href="../../static.files/normalize-9960930a.css"><link rel="stylesheet" href="../../static.files/rustdoc-e56847b5.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="poc_kokkos_rs" data-themes="" data-resource-suffix="" data-rustdoc-version="1.91.1 (ed61e7d7e 2025-11-07)" data-channel="1.91.1" data-search-js="search-e256b49e.js" data-stringdex-js="stringdex-c3e638e9.js" data-settings-js="settings-c38705f0.js" ><script src="../../static.files/storage-e2aeef58.js"></script><script defer src="../sidebar-items.js"></script><script defer src="../../static.files/main-6dc2a7f3.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-263c88ec.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-eab170b8.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-044be391.svg"></head><body class="rustdoc mod"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><rustdoc-topbar><h2><a href="#">Module view</a></h2></rustdoc-topbar><nav class="sidebar"><div class="sidebar-crate"><h2><a href="../../poc_kokkos_rs/index.html">poc_<wbr>kokkos_<wbr>rs</a><span class="version">0.1.0</span></h2></div><div class="sidebar-elems"><section id="rustdoc-toc"><h2 class="location"><a href="#">Module view</a></h2><h3><a href="#">Sections</a></h3><ul class="block top-toc"><li><a href="#example" title="Example">Example</a></li></ul><h3><a href="#modules">Module Items</a></h3><ul class="block"><li><a href="#modules" title="Modules">Modules</a></li><li><a href="#structs" title="Structs">Structs</a></li><li><a href="#enums" title="Enums">Enums</a></li><li><a href="#types" title="Type Aliases">Type Aliases</a></li></ul></section><div id="rustdoc-modnav"><h2 class="in-crate"><a href="../index.html">In crate poc_<wbr>kokkos_<wbr>rs</a></h2></div></div></nav><div class="sidebar-resizer" title="Drag to resize sidebar"></div><main><div class="width-limiter"><section id="main-content" class="content"><div class="main-heading"><div class="rustdoc-breadcrumbs"><a href="../index.html">poc_kokkos_rs</a></div><h1>Module <span>view</span>&nbsp;<button id="copy-path" title="Copy item path to clipboard">Copy item path</button></h1><rustdoc-toolbar></rustdoc-toolbar><span class="sub-heading"><a class="src" href="../../src/poc_kokkos_rs/view/mod.rs.html#1-417">Source</a> </span></div><details class="toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>data structure related code</p>
+<p>This module contains code used for the implementations of <code>Views</code>, a data structure
+defined and used by the Kokkos library. There are different types of views, all
+implemented using the same backend, <a href="struct.ViewBase.html" title="struct poc_kokkos_rs::view::ViewBase">ViewBase</a>.</p>
+<p>Eventually, the different types of Views should be removed and replaced by a single
+type. The distinction between original and mirrors doesn’t seem necessary in a Rust
+implementation where the ownership system handles all memory transaction.</p>
+<p>In order to have thread-safe structures to use in parallel statement, the inner data
+type of views is adjusted implicitly when compiling using parallelization features.
+To match the adjusted data type, view access is done through <code>get</code> and <code>set</code> methods,
+allowing for feature-specific mutability in signatures while keeping a consistent user
+API.</p>
+<p>Parameters of aforementionned views are defined in the <a href="parameters/index.html" title="mod poc_kokkos_rs::view::parameters"><code>parameters</code></a> sub-module.</p>
+<h4 id="example"><a class="doc-anchor" href="#example">§</a>Example</h4>
+<p>Initialize and fill a 2D matrix:</p>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use </span>poc_kokkos_rs::view::{
+    parameters::Layout,
+    ViewOwned,
+};
+
+<span class="kw">let </span><span class="kw-2">mut </span>viewA: ViewOwned&lt;<span class="lifetime">'_</span>, <span class="number">2</span>, f64&gt; = ViewOwned::new(
+        Layout::Right, <span class="comment">// see parameters &amp; Kokkos doc
+        </span>[<span class="number">3</span>, <span class="number">5</span>],        <span class="comment">// 3 rows, 5 columns
+    </span>);
+
+<span class="kw">for </span>row <span class="kw">in </span><span class="number">0</span>..<span class="number">3 </span>{
+    <span class="kw">for </span>col <span class="kw">in </span><span class="number">0</span>..<span class="number">5 </span>{
+        viewA.set([row, col], row <span class="kw">as </span>f64);
+    }
+}
+
+<span class="comment">// viewA:
+// (0.0 0.0 0.0 0.0 0.0)
+// (1.0 1.0 1.0 1.0 1.0)
+// (2.0 2.0 2.0 2.0 2.0)</span></code></pre></div></div></details><h2 id="modules" class="section-header">Modules<a href="#modules" class="anchor">§</a></h2><dl class="item-table"><dt><a class="mod" href="parameters/index.html" title="mod poc_kokkos_rs::view::parameters">parameters</a></dt><dd>view parameterization code</dd></dl><h2 id="structs" class="section-header">Structs<a href="#structs" class="anchor">§</a></h2><dl class="item-table"><dt><a class="struct" href="struct.ViewBase.html" title="struct poc_kokkos_rs::view::ViewBase">View<wbr>Base</a></dt><dd>Common structure used as the backend of all <code>View</code> types. The main differences between
+usable types is the type of the <code>data</code> field.</dd></dl><h2 id="enums" class="section-header">Enums<a href="#enums" class="anchor">§</a></h2><dl class="item-table"><dt><a class="enum" href="enum.ViewError.html" title="enum poc_kokkos_rs::view::ViewError">View<wbr>Error</a></dt><dd>Enum used to classify view-related errors.</dd></dl><h2 id="types" class="section-header">Type Aliases<a href="#types" class="anchor">§</a></h2><dl class="item-table"><dt><a class="type" href="type.ViewOwned.html" title="type poc_kokkos_rs::view::ViewOwned">View<wbr>Owned</a></dt><dd>View type owning the data it yields access to, i.e. “original” view.</dd><dt><a class="type" href="type.ViewRO.html" title="type poc_kokkos_rs::view::ViewRO">ViewRO</a></dt><dd>View type owning a read-only borrow to the data it yields access to, i.e. a
+read-only mirror.</dd><dt><a class="type" href="type.ViewRW.html" title="type poc_kokkos_rs::view::ViewRW">ViewRW</a></dt><dd>View type owning a mutable borrow to the data it yields access to, i.e. a
+read-write mirror.</dd></dl></section></div></main></body></html>
